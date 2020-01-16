@@ -31,6 +31,8 @@ namespace RoKBot
 
             Random random = new Random((int)(DateTime.UtcNow.Ticks % int.MaxValue));
 
+            if (!Routine.IsReady) Routine.Click(.24, .24);
+
             while (true)
             {
                 foreach (Func<bool> task in tasks.OrderBy(i => random.Next()))
@@ -49,7 +51,7 @@ namespace RoKBot
                 Routine.Click(0.42, 0.67);
                 Routine.Wait(3, 5);
 
-                if (!Routine.Click(.20,.24))
+                if (!Routine.Click(.24,.24))
                 {
                     break;
                 }
@@ -67,7 +69,7 @@ namespace RoKBot
         {
             while (true)
             {
-                Routine.GatherResources();
+                Routine.Explore();
                 using (Bitmap screen = Collector.CaptureScreen(out Rectangle bounds))
                 {
                     Point pos = Mouse.GetCursorPosition();
