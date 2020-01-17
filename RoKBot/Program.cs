@@ -1,9 +1,7 @@
 ﻿using RoKBot.Utils;
-using Shark.Runtime;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Drawing.Imaging;
 using System.Linq;
 using System.Threading;
 
@@ -69,7 +67,7 @@ namespace RoKBot
         {
             while (true)
             {
-                Routine.Explore();
+                //Routine.GatherResources();
                 using (Bitmap screen = Collector.CaptureScreen(out Rectangle bounds))
                 {
                     Point pos = Mouse.GetCursorPosition();
@@ -87,6 +85,7 @@ namespace RoKBot
             Console.WriteLine("Started");
 
             bool test = false;
+                
 
             if (test)
             {

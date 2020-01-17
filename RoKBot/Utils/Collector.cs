@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace RoKBot.Utils
 {
@@ -15,6 +16,12 @@ namespace RoKBot.Utils
         [DllImport("user32.dll")]
         private static extern IntPtr GetWindowRect(IntPtr hWnd, ref Rect rect);
 
+        [DllImport("user32.dll")]
+        static extern bool SetForegroundWindow(IntPtr hWnd);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        static extern bool MoveWindow(IntPtr hWnd, int X, int Y, int Width, int Height, bool Repaint);
+
         [StructLayout(LayoutKind.Sequential)]
         private struct Rect
         {
@@ -24,18 +31,31 @@ namespace RoKBot.Utils
             public int Bottom;
         }
 
+        private static IntPtr hWnd = IntPtr.Zero;
+
         public static Bitmap CaptureScreen(out Rectangle bounds)
         {
-            var foregroundWindowsHandle = GetForegroundWindow();
+
+            if (hWnd == IntPtr.Zero)
+            {
+                hWnd = GetForegroundWindow();
+            }
+            else
+            {                
+                SetForegroundWindow(hWnd);
+            }
+
+            MoveWindow(hWnd, 0, 0, 800, 600, true);
+
             var rect = new Rect();
-            GetWindowRect(foregroundWindowsHandle, ref rect);
+            GetWindowRect(hWnd, ref rect);
 
             int height = (rect.Bottom - rect.Top) - 44;
             int width = height * 1770 / 996;
 
-            bounds = new Rectangle(rect.Left + 3, rect.Top + 42, width, height);                       
+            bounds = new Rectangle(rect.Left + 3, rect.Top + 42, width, height);
 
-            Bitmap bitmap = new Bitmap(width, height, PixelFormat.Format24bppRgb);
+            Bitmap bitmap = new Bitmap(bounds.Width, bounds.Height, PixelFormat.Format24bppRgb);
 
             using (Graphics g = Graphics.FromImage(bitmap))
             {
@@ -56,9 +76,6 @@ namespace RoKBot.Utils
 
             return buffer;
         }
-
-        static int Width = 1507;
-        static int Height = 889;
 
         public static object Find(Bitmap template, Bitmap source, float threshold = 0.9f)
         {

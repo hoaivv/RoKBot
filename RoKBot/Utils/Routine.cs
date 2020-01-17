@@ -55,7 +55,7 @@ namespace RoKBot.Utils
         public static bool Click(double percentageX, double percentageY, int randomThreshold = 10)
         {            
             using (Bitmap screen = Collector.CaptureScreen(out Rectangle bounds))
-            {
+            {                
                 int x = (int)(bounds.Width * percentageX) + RandomGenerator.Next((-randomThreshold * bounds.Width / 1770) / 2, (randomThreshold * bounds.Width / 1770) / 2 + 1);
                 int y = (int)(bounds.Height * percentageY) + RandomGenerator.Next((-randomThreshold * bounds.Width / 1770) / 2, (randomThreshold * bounds.Width / 1770) / 2 + 1);
 
@@ -77,7 +77,7 @@ namespace RoKBot.Utils
             using (Bitmap image = AForge.Imaging.Image.FromFile(file))
             {
                 using (Bitmap screen = Collector.CaptureScreen(out Rectangle bounds))
-                {
+                {                   
                     using (Bitmap buffer = Collector.Uniform(image, bounds))
                     {                        
                         using (Bitmap cropped = new Bitmap(buffer.Width * 2, buffer.Height * 2, PixelFormat.Format24bppRgb))
@@ -253,16 +253,22 @@ namespace RoKBot.Utils
         {
             while (!IsReady) Wait(1, 2);
 
-            if (Click(.05, .91, "button.city")) Wait(2, 3);
-            if (Click(.05, .91, "button.city")) Wait(2, 3);
+            if (Match(.04, .76, "button.search", 0.95f))
+            {
+                Click(.05, .91);
+                Wait(2, 3);
+            }            
         }
 
         public static void OpenMap()
         {
             while (!IsReady) Wait(1, 2);
 
-            if (Click(.05, .91, "button.map")) Wait(2, 3);
-            if (Click(.05, .91, "button.map")) Wait(2, 3);
+            if (!Match(.04, .76, "button.search", 0.95f))
+            {
+                Click(.05, .91); 
+                Wait(2, 3);
+            }
         }
 
         public static void OpenRandom()
@@ -295,15 +301,19 @@ namespace RoKBot.Utils
             {
                 Wait(3, 5);
 
-                if (Click(.72, .85, "action.march"))
+                if (!Match(.73, .9,"icon.notroops") && Click(.72, .85, "action.march"))
                 {
                     Console.WriteLine("Gathering " + type);
                     return true;
                 }
+                else
+                {
+                    Click(.87, .06); // close
+                }
             }
             else
             {
-                Routine.Click(.5, .5);
+                Click(.5, .5);
             }
 
             return false;
@@ -326,10 +336,10 @@ namespace RoKBot.Utils
             Routine.Click(.35, .85); // click food icon in menu
 
             Routine.Wait(3, 5);
-            Routine.Click(.43, .55); // max level;
+            Routine.Click(.42, .56, 0); // max level;
 
             Routine.Wait(1,2);
-            Routine.Click(.35, .66); // click search
+            if (!Click(.35, .66, "label.search")) return false; // click search
 
             Routine.Wait(1, 2);
             while (Match(.35, .66, "label.search"))
@@ -360,10 +370,10 @@ namespace RoKBot.Utils
             Routine.Click(.50, .85); // click wood icon in menu
 
             Routine.Wait(3, 5);
-            Routine.Click(.58, .55); // max level;
+            Routine.Click(.57, .56, 0); // max level;
 
             Routine.Wait(1, 2);
-            Routine.Click(.50, .66); // click search
+            if (!Click(.509, .66, "label.search")) return false; // click search
 
             Routine.Wait(1, 2);
             while (Match(.50, .66, "label.search"))
@@ -393,7 +403,7 @@ namespace RoKBot.Utils
             Click(.65, .85); // click stone icon in menu
 
             Wait(3, 5);
-            Click(.72, .55); // max level;
+            if (!Click(.65, .66, "label.search")) return false; // click search
 
             Wait(1, 2);
             Click(.65, .66); // click search
@@ -416,7 +426,7 @@ namespace RoKBot.Utils
 
             OpenMap();
 
-            Wait(3,5);
+            //Wait(3,5);
             if (!Click(.04, .73, "button.search")) // open gathering menu
             {
                 return false;
@@ -426,10 +436,10 @@ namespace RoKBot.Utils
             Click(.80, .85); // click gold icon in menu
 
             Wait(3, 5);
-            Click(.87, .55); // max level;
+            Click(.87, .56, 0); // max level;
 
             Wait(1, 2);
-            Click(.80, .66); // click search
+            if (!Click(.80, .66, "label.search")) return false; // click search
 
             Wait(1, 2);
             while (Match(.80, .66, "label.search"))
@@ -443,7 +453,7 @@ namespace RoKBot.Utils
             return SendGatheringTroops("gold");
         }
 
-        private static Queue<Func<bool>> GatheringTasks = new Queue<Func<bool>>(new Func<bool>[] { GatherFood, GatherWood, GatherStone, GatherGold });
+        private static Queue<Func<bool>> GatheringTasks = new Queue<Func<bool>>(new Func<bool>[] { GatherFood, GatherWood, GatherStone });
 
         public static bool GatherResources()
         {
@@ -484,6 +494,15 @@ namespace RoKBot.Utils
             }
 
             Wait(2, 3);
+
+            if (Match(.5, .68, "button.getmore"))
+            {
+                Click(.79, .2); // close
+                Wait(1, 2);
+                Click(.85, .13); // close
+
+                trained = false;
+            }
 
             if (trained) Console.WriteLine("Traning " + type);
 
@@ -864,6 +883,9 @@ namespace RoKBot.Utils
             bool claimed = false;
 
             Click(.96, .80); // open mails
+            Wait(2, 3);
+
+            if (!Match(.86, .06, "label.mail")) return false;
 
             /*
             Wait(2, 3);
@@ -952,7 +974,8 @@ namespace RoKBot.Utils
                     return false;
                 }
 
-                Wait(2, 3);
+                Wait(2, 3);                
+
                 if (!Click("icon.upgrade", Options.NoCache))
                     return false;
 
