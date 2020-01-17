@@ -24,21 +24,27 @@ namespace RoKBot
                 Routine.TrainTroops,
                 Routine.ClaimQuests,
                 Routine.Build,
-                Routine.Build
+                Routine.Build,
+                Routine.ClaimDaily
+
             });
 
             Random random = new Random((int)(DateTime.UtcNow.Ticks % int.MaxValue));
 
-            if (!Routine.IsReady) Routine.Click(.24, .24);
+            if (!Routine.IsReady) Routine.Click(.20, .23);
 
             while (true)
             {
+                Console.WriteLine();
+                Routine.HealTroops();
+
                 foreach (Func<bool> task in tasks.OrderBy(i => random.Next()))
                 {
+                    if (random.Next(0, 101) < 30) continue;
+
                     Console.WriteLine();
                     Console.WriteLine("Running " + task.Method.Name);
                     task();
-
                 }
 
                 Console.WriteLine();
@@ -48,13 +54,13 @@ namespace RoKBot
                 Routine.Wait(3, 5);
                 Routine.Click(0.42, 0.67);
                 Routine.Wait(3, 5);
-
-                if (!Routine.Click(.24,.24))
+                
+                while (!Routine.IsReady)
                 {
-                    break;
+                    Routine.Click(.20, .23);
+                    Routine.Wait(1, 2);
                 }
 
-                while (!Routine.IsReady) Routine.Wait(1, 2);
                 Routine.Wait(20, 25);
 
                 Console.WriteLine();
@@ -67,7 +73,7 @@ namespace RoKBot
         {
             while (true)
             {
-                //Routine.GatherResources();
+                //Routine.ReadMails();
                 using (Bitmap screen = Collector.CaptureScreen(out Rectangle bounds))
                 {
                     Point pos = Mouse.GetCursorPosition();

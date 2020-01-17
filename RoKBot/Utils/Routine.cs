@@ -284,6 +284,60 @@ namespace RoKBot.Utils
         }
     }
 
+    partial class Routine
+    {
+        public static bool ClaimDaily()
+        {
+            OpenMap();            
+            Click(.95, .03, 0);
+            Wait(2, 3);
+            if (Click("icon.daily", Options.NoCache))
+            {
+                Wait(2, 3);
+                Click(.89, .23);
+            }
+
+            Click(.03, .05); // back;
+
+            return true;
+        }
+    }
+
+    partial class Routine
+    {
+        public static bool HealTroops()
+        {
+            OpenCity();
+
+            if (Click(.41,.69, "icon.heal"))
+            {
+                Wait(2, 3);
+                if (Click(.71,.82, "icon.clock"))
+                {
+                    Wait(2, 3);
+                    Click(.42, .73); // request help
+                    Wait(1, 2);
+                    OpenMap();
+
+                    Console.WriteLine("Healing");
+
+                    return true;
+                }
+                else
+                {
+                    Click(.85, .11); // close
+                }
+            }
+            else
+            {
+                Click(.42, .73);
+                Wait(1, 2);
+                OpenMap();
+            }
+
+            return false;
+        }
+    }
 
     partial class Routine
     {
@@ -899,9 +953,47 @@ namespace RoKBot.Utils
             Wait(2, 3);
             Click(.2, .06); // report tab
             Wait(2, 3);
+
+            while (Click(.9, .43, "icon.view"))
+            {
+                Wait(4, 5);
+                Click(.5, .5);
+                
+                Wait(2, 3);
+
+                if (Click(.7, .66, "button.investigate"))
+                {
+                    Wait(2, 3);
+
+                    if (!Match(.97, .17, "icon.investigate")) Click(.78, .27, "button.send");
+                    if (!Match(.97, .35, "icon.investigate")) Click(.78, .44, "button.send");
+                    if (!Match(.97, .52, "icon.investigate")) Click(.78, .60, "button.send");
+                    Wait(1, 2);
+
+                    OpenCity();
+
+                    Click(.96, .80); // open mails
+                    Wait(2, 3);
+
+                    break;
+                }
+                else
+                {
+                    Click(.5, 5);
+                    Wait(1, 2);
+                }
+
+                OpenCity();
+
+                Click(.96, .80); // open mails
+                Wait(2, 3);
+            }
+
             Click(.11, .92); // claim all
             Wait(2, 3);
             claimed |= (Click(.5, .72, "button.confirm"));
+
+            
 
             Wait(2, 3);
             Click(.31, .06); // alliance tab
