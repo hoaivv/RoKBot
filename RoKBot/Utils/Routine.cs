@@ -369,29 +369,32 @@ namespace RoKBot.Utils
 
             OpenMap();
 
-            Routine.Wait(3,5);
+            Wait(3,5);
 
-            if (!Routine.Click(.04, .76, "button.search")) // open gathering menu
+            if (!Click(.04, .76, "button.search")) // open gathering menu
             {
                 return false;
             }
 
-            Routine.Wait(3,5);
-            Routine.Click(.35, .85); // click food icon in menu
+            Wait(3,5);
+            Click(.35, .85); // click food icon in menu
 
-            Routine.Wait(3, 5);
-            Routine.Click(.42, .56, 0); // max level;
+            Wait(3, 5);
 
-            Routine.Wait(1,2);
-            if (!Click(.35, .66, "label.search")) return false; // click search
+            if (!Match(.35, .66, "label.search")) return false;
 
-            Routine.Wait(1, 2);
+            Click(.42, .56, 0); // max level;
+
+            Wait(1,2);
+            Click(.35, .66);
+
+            Wait(1, 2);
             while (Match(.35, .66, "label.search"))
             {
                 Click(.24, .55); // minus
-                Routine.Wait(1, 2);
-                Routine.Click(.35, .66); // click search
-                Routine.Wait(1, 2);
+                Wait(1, 2);
+                Click(.35, .66); // click search
+                Wait(1, 2);
             }
 
             return SendGatheringTroops("food");
@@ -403,29 +406,32 @@ namespace RoKBot.Utils
 
             OpenMap();
 
-            Routine.Wait(3,5);
+            Wait(3,5);
 
             if (!Routine.Click(.04, .73, "button.search")) // open gathering menu
             {
                 return false;
             }
 
-            Routine.Wait(3,5);
-            Routine.Click(.50, .85); // click wood icon in menu
+            Wait(3,5);
+            Click(.50, .85); // click wood icon in menu
 
-            Routine.Wait(3, 5);
-            Routine.Click(.57, .56, 0); // max level;
+            Wait(3, 5);
 
-            Routine.Wait(1, 2);
-            if (!Click(.509, .66, "label.search")) return false; // click search
+            if (!Match(.50, .66, "label.search")) return false;
 
-            Routine.Wait(1, 2);
+            Click(.57, .56, 0); // max level;
+
+            Wait(1, 2);
+            Click(.50, .66);
+
+            Wait(1, 2);
             while (Match(.50, .66, "label.search"))
             {
                 Click(.39, .55); // minus
-                Routine.Wait(1, 2);
-                Routine.Click(.50, .66); // click search
-                Routine.Wait(1, 2);
+                Wait(1, 2);
+                Click(.50, .66); // click search
+                Wait(1, 2);
             }
 
             return SendGatheringTroops("wood");
@@ -447,7 +453,10 @@ namespace RoKBot.Utils
             Click(.65, .85); // click stone icon in menu
 
             Wait(3, 5);
-            if (!Click(.65, .66, "label.search")) return false; // click search
+            
+            if (!Match(.65, .66, "label.search")) return false;
+
+            Click(.72, .56, 0); // max level;
 
             Wait(1, 2);
             Click(.65, .66); // click search
@@ -480,10 +489,13 @@ namespace RoKBot.Utils
             Click(.80, .85); // click gold icon in menu
 
             Wait(3, 5);
+
+            if (!Match(.80, .66, "label.search")) return false;
+            
             Click(.87, .56, 0); // max level;
 
             Wait(1, 2);
-            if (!Click(.80, .66, "label.search")) return false; // click search
+            Click(.80, .66);
 
             Wait(1, 2);
             while (Match(.80, .66, "label.search"))
@@ -497,7 +509,7 @@ namespace RoKBot.Utils
             return SendGatheringTroops("gold");
         }
 
-        private static Queue<Func<bool>> GatheringTasks = new Queue<Func<bool>>(new Func<bool>[] { GatherFood, GatherWood, GatherStone });
+        private static Queue<Func<bool>> GatheringTasks = new Queue<Func<bool>>(new Func<bool>[] { GatherFood, GatherWood, GatherStone, GatherGold });
 
         public static bool GatherResources()
         {

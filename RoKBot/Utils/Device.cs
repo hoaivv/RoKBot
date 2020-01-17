@@ -15,7 +15,7 @@ namespace RoKBot.Utils
         
         static Device()
         {
-            server.StartServer(@"C:\Program Files (x86)\Android\android-sdk\platform-tools\adb.exe", restartServerIfNewer: false);
+            server.StartServer(@"D:\Android\android-sdk\platform-tools\adb.exe", restartServerIfNewer: false);
             devices = AdbClient.Instance.GetDevices();
         }
 
