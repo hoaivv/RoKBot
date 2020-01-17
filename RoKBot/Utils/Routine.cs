@@ -54,16 +54,12 @@ namespace RoKBot.Utils
 
         public static bool Click(double percentageX, double percentageY, int randomThreshold = 10)
         {            
-            using (Bitmap screen = Collector.CaptureScreen(out Rectangle bounds))
+            using (Bitmap screen = Device.Screen)
             {                
-                int x = (int)(bounds.Width * percentageX) + RandomGenerator.Next((-randomThreshold * bounds.Width / 1770) / 2, (randomThreshold * bounds.Width / 1770) / 2 + 1);
-                int y = (int)(bounds.Height * percentageY) + RandomGenerator.Next((-randomThreshold * bounds.Width / 1770) / 2, (randomThreshold * bounds.Width / 1770) / 2 + 1);
+                int x = (int)(screen.Width * percentageX) + RandomGenerator.Next((-randomThreshold * screen.Width / 1770) / 2, (randomThreshold * screen.Width / 1770) / 2 + 1);
+                int y = (int)(screen.Height * percentageY) + RandomGenerator.Next((-randomThreshold * screen.Width / 1770) / 2, (randomThreshold * screen.Width / 1770) / 2 + 1);
 
-                Mouse.SetCursorPosition(x + bounds.X, y + bounds.Y);
-                Thread.CurrentThread.Join(RandomGenerator.Next(10, 300));
-                Mouse.MouseEvent(Mouse.MouseEventFlags.LeftDown);
-                Thread.CurrentThread.Join(RandomGenerator.Next(10, 300));
-                Mouse.MouseEvent(Mouse.MouseEventFlags.LeftUp);
+                Device.Tap(x, y);
 
                 return true;
             }
@@ -76,16 +72,16 @@ namespace RoKBot.Utils
 
             using (Bitmap image = AForge.Imaging.Image.FromFile(file))
             {
-                using (Bitmap screen = Collector.CaptureScreen(out Rectangle bounds))
+                using (Bitmap screen = Device.Screen)
                 {                   
-                    using (Bitmap buffer = Collector.Uniform(image, bounds))
+                    using (Bitmap buffer = Collector.Uniform(image, screen))
                     {                        
                         using (Bitmap cropped = new Bitmap(buffer.Width * 2, buffer.Height * 2, PixelFormat.Format24bppRgb))
                         {
                             using (Graphics g = Graphics.FromImage(cropped))
                             {
-                                int x = (int)(bounds.Width * percentageX);
-                                int y = (int)(bounds.Height * percentageY);
+                                int x = (int)(screen.Width * percentageX);
+                                int y = (int)(screen.Height * percentageY);
 
                                 g.DrawImage(screen, 0, 0, new Rectangle { X = Math.Max(0, x - buffer.Width), Y = Math.Max(0, y - buffer.Height), Width = buffer.Width * 2, Height = buffer.Height * 2 }  , GraphicsUnit.Pixel);
 
@@ -94,10 +90,7 @@ namespace RoKBot.Utils
                                     x += RandomGenerator.Next(-(randomThreshold * buffer.Width / image.Width ) / 2, (randomThreshold * buffer.Width / image.Width) / 2 + 1);
                                     y += RandomGenerator.Next(-(randomThreshold * buffer.Width / image.Width) / 2, (randomThreshold * buffer.Width / image.Width) / 2 + 1);
 
-                                    Mouse.SetCursorPosition(x + bounds.X, y + bounds.Y);
-                                    Mouse.MouseEvent(Mouse.MouseEventFlags.LeftDown);
-                                    Thread.CurrentThread.Join(RandomGenerator.Next(10, 300));
-                                    Mouse.MouseEvent(Mouse.MouseEventFlags.LeftUp);
+                                    Device.Tap(x, y);
 
                                     return true;
                                 }
@@ -117,13 +110,13 @@ namespace RoKBot.Utils
 
             using (Bitmap image = AForge.Imaging.Image.FromFile(file))
             {
-                using (Bitmap screen = Collector.CaptureScreen(out Rectangle bounds))
+                using (Bitmap screen = Device.Screen)
                 {
                     object result = null;
 
                     if (!Cache<string, CachedRectangle>.HasEntry(file))
                     {
-                        using (Bitmap buffer = Collector.Uniform(image, bounds))
+                        using (Bitmap buffer = Collector.Uniform(image, screen))
                         {                            
                             result = Collector.Find(buffer, screen);
                         }
@@ -132,7 +125,7 @@ namespace RoKBot.Utils
                     {
                         if (!options.HasFlag(Options.IgnoreVerification))
                         {
-                            using (Bitmap buffer = Collector.Uniform(image, bounds))
+                            using (Bitmap buffer = Collector.Uniform(image, screen))
                             {                                
                                 using (Bitmap cropped = new Bitmap(buffer.Width, buffer.Height, PixelFormat.Format24bppRgb))
                                 {
@@ -163,10 +156,7 @@ namespace RoKBot.Utils
                     int x = r.Left + r.Width / 2 + RandomGenerator.Next(-(int)(0.075 * r.Width), +(int)(0.075 * r.Width));
                     int y = r.Top + r.Height / 2 + RandomGenerator.Next(-(int)(0.075 * r.Height), +(int)(0.075 * r.Height)); ;
 
-                    Mouse.SetCursorPosition(x + bounds.X, y + bounds.Y);
-                    Mouse.MouseEvent(Mouse.MouseEventFlags.LeftDown);
-                    Thread.CurrentThread.Join(RandomGenerator.Next(10, 300));
-                    Mouse.MouseEvent(Mouse.MouseEventFlags.LeftUp);
+                    Device.Tap(x, y);
 
 
                     if (!options.HasFlag(Options.NoCache))
@@ -186,16 +176,16 @@ namespace RoKBot.Utils
 
             using (Bitmap image = AForge.Imaging.Image.FromFile(file))
             {
-                using (Bitmap screen = Collector.CaptureScreen(out Rectangle bounds))
+                using (Bitmap screen = Device.Screen)
                 {
-                    using (Bitmap buffer = Collector.Uniform(image, bounds))
+                    using (Bitmap buffer = Collector.Uniform(image, screen))
                     {                        
                         using (Bitmap cropped = new Bitmap(buffer.Width * 2, buffer.Height * 2, PixelFormat.Format24bppRgb))
                         {
                             using (Graphics g = Graphics.FromImage(cropped))
                             {
-                                int x = (int)(bounds.Width * percentageX);
-                                int y = (int)(bounds.Height * percentageY);
+                                int x = (int)(screen.Width * percentageX);
+                                int y = (int)(screen.Height * percentageY);
 
                                 g.DrawImage(screen, 0, 0, new Rectangle { X = Math.Max(0, x - buffer.Width), Y = Math.Max(0, y - buffer.Height), Width = buffer.Width * 2, Height = buffer.Height * 2 }, GraphicsUnit.Pixel);
 
@@ -215,9 +205,9 @@ namespace RoKBot.Utils
 
             using (Bitmap image = AForge.Imaging.Image.FromFile(file))
             {
-                using (Bitmap screen = Collector.CaptureScreen(out Rectangle bounds))
+                using (Bitmap screen = Device.Screen)
                 {
-                    using (Bitmap buffer = Collector.Uniform(image, bounds))
+                    using (Bitmap buffer = Collector.Uniform(image, screen))
                     {
                         object test = Collector.Find(buffer, screen, threshold);
 
@@ -225,8 +215,8 @@ namespace RoKBot.Utils
                         {
                             Rectangle r = (Rectangle)test;
 
-                            percentageX = (double)(r.X + r.Width / 2) / bounds.Width;
-                            percentageY = (double)(r.Y + r.Height / 2) / bounds.Height;
+                            percentageX = (double)(r.X + r.Width / 2) / screen.Width;
+                            percentageY = (double)(r.Y + r.Height / 2) / screen.Height;
 
                             return true;
                         }
@@ -846,7 +836,7 @@ namespace RoKBot.Utils
                     while (Click(.76, .74, "button.donate"))
                     {
                         donationMade = true;
-                        Wait(2, 3);
+                        Wait(1, 2);
                     }
 
                     Wait(2, 3);

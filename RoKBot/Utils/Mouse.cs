@@ -2,6 +2,7 @@
 using System.Drawing;
 using System.Runtime.InteropServices;
 
+
 namespace RoKBot.Utils
 {
     public class Mouse

@@ -33,6 +33,7 @@ namespace RoKBot.Utils
 
         private static IntPtr hWnd = IntPtr.Zero;
 
+        
         public static Bitmap CaptureScreen(out Rectangle bounds)
         {
 
@@ -64,8 +65,9 @@ namespace RoKBot.Utils
 
             return bitmap;
         }
+        
 
-        public static Bitmap Uniform(Bitmap image, Rectangle bounds)
+        public static Bitmap Uniform(Bitmap image, Bitmap bounds)
         {
             Bitmap buffer = new Bitmap(image.Width * bounds.Width / 1770, image.Height * bounds.Height / 996, PixelFormat.Format24bppRgb);
 

@@ -1,8 +1,11 @@
 ﻿using RoKBot.Utils;
+using SharpAdbClient;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.IO;
 using System.Linq;
+using System.Net;
 using System.Threading;
 
 namespace RoKBot
@@ -11,7 +14,9 @@ namespace RoKBot
     {
         static void Work()
         {
-            List<Func<bool>> tasks = new List<Func<bool>>(new Func<bool>[]{
+            try
+            {
+                List<Func<bool>> tasks = new List<Func<bool>>(new Func<bool>[]{
 
                 Routine.GatherResources,
                 Routine.AllianceTasks,
@@ -29,42 +34,45 @@ namespace RoKBot
 
             });
 
-            Random random = new Random((int)(DateTime.UtcNow.Ticks % int.MaxValue));
+                Random random = new Random((int)(DateTime.UtcNow.Ticks % int.MaxValue));
 
-            if (!Routine.IsReady) Routine.Click(.20, .23);
-
-            while (true)
-            {
-                Console.WriteLine();
-                Routine.HealTroops();
-
-                foreach (Func<bool> task in tasks.OrderBy(i => random.Next()))
+                while (true)
                 {
-                    if (random.Next(0, 101) < 30) continue;
+                    Device.StartROK();
 
                     Console.WriteLine();
-                    Console.WriteLine("Running " + task.Method.Name);
-                    task();
+                    Console.WriteLine("Starting ROK");
+
+                    while (!Routine.IsReady) Routine.Wait(1, 2);
+
+                    Console.WriteLine();
+                    Console.WriteLine("Starting new routine");
+
+
+                    Console.WriteLine("Running HealTroops");
+                    Console.WriteLine();
+                    Routine.HealTroops();
+
+                    foreach (Func<bool> task in tasks.OrderBy(i => random.Next()))
+                    {
+                        if (random.Next(0, 101) < 30) continue;
+
+                        Console.WriteLine();
+                        Console.WriteLine("Running " + task.Method.Name);
+                        task();
+                    }
+
+                    Console.WriteLine("Running SwitchAccount");
+                    Console.WriteLine();
+                    Routine.SwitchAccount();
+
+                    Device.StopROK();
                 }
 
-                Console.WriteLine();
-                Routine.SwitchAccount();
-
-                Keyboard.Send(Keyboard.ScanCode.ESCAPE);
-                Routine.Wait(3, 5);
-                Routine.Click(0.42, 0.67);
-                Routine.Wait(3, 5);
-                
-                while (!Routine.IsReady)
-                {
-                    Routine.Click(.20, .23);
-                    Routine.Wait(1, 2);
-                }
-
-                Routine.Wait(20, 25);
-
-                Console.WriteLine();
-                Console.WriteLine("Starting new routine");
+            }
+            catch(ThreadAbortException)
+            {
+                Console.WriteLine("All tasks stopped");
             }
         }
 
@@ -83,23 +91,32 @@ namespace RoKBot
             }
 
         }
+
+        static bool Paused = false;
+
         static void Main(string[] args)
         {
+            Console.WriteLine("Press Enter to start");
             Console.ReadLine();
-            Console.WriteLine("Start after 3 seconds ...");
-            Thread.CurrentThread.Join(3000);
-            Console.WriteLine("Started");
 
-            bool test = false;
-                
+            Thread T = new Thread(new ThreadStart(Work));
+            T.Start();
 
-            if (test)
+            while (true)
             {
-                Test();
-            }
-            else
-            {
-                Work();
+                Console.ReadLine();
+                Paused = !Paused;
+
+                if (Paused)
+                {
+                    T.Abort();
+                    Console.WriteLine("Press Enter to resume");
+                }
+                else
+                {
+                    T = new Thread(new ThreadStart(Work));
+                    T.Start();
+                }
             }
         }
     }
