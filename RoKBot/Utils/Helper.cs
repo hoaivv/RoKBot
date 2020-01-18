@@ -85,8 +85,8 @@ namespace RoKBot.Utils
         {
             Rectangle[] results = new ExhaustiveTemplateMatching(threshold).ProcessImage(source, template).OrderByDescending(i => i.Similarity).Select(i => i.Rectangle).ToArray();
 
-            template.Save("D:\\template.jpg");
-            source.Save("D:\\source.jpg");
+            //template.Save("D:\\template.jpg");
+            //source.Save("D:\\source.jpg");
 
 
             return results.Length > 0 ? (object)results[0] : null;

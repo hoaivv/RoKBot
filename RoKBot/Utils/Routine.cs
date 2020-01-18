@@ -36,12 +36,6 @@ namespace RoKBot.Utils
 
         private static Random RandomGenerator = new Random((int)DateTime.UtcNow.Ticks);
 
-        public static void Delete(string file)
-        {
-            file = Path.Combine("assets", file + ".jpg");
-            Cache<string, CachedRectangle>.Delete(file);
-        }
-
         public static bool Tap(int x, int y, int randomThreshold = 10)
         {            
             using (Bitmap screen = Device.Screen)
@@ -57,8 +51,12 @@ namespace RoKBot.Utils
 
         public static bool Tap(int x, int y, string file, int randomThreshold = 10)
         {
-            file = Path.Combine("assets", file + ".jpg");
-            if (!File.Exists(file)) return false;
+            string png = Path.Combine("assets", file + ".png");
+            string jpg = Path.Combine("assets", file + ".jpg");
+
+            file = File.Exists(png) ? png : File.Exists(jpg) ? jpg : null;
+
+            if (file == null) return false;
 
             using (Bitmap tmpl = Helper.Load(file))
             {
@@ -89,8 +87,12 @@ namespace RoKBot.Utils
 
         public static bool Tap(string file, int randomThreshold = 10)
         {
-            file = Path.Combine("assets", file + ".jpg");
-            if (!File.Exists(file)) return false;            
+            string png = Path.Combine("assets", file + ".png");
+            string jpg = Path.Combine("assets", file + ".jpg");
+
+            file = File.Exists(png) ? png : File.Exists(jpg) ? jpg : null;
+
+            if (file == null) return false;
 
             using (Bitmap tmpl = Helper.Load(file))
             {
@@ -117,8 +119,12 @@ namespace RoKBot.Utils
 
         public static bool Match(int x, int y, string file, float similarityThreshold = 0.9f)
         {
-            file = Path.Combine("assets", file + ".jpg");
-            if (!File.Exists(file)) return false;
+            string png = Path.Combine("assets", file + ".png");
+            string jpg = Path.Combine("assets", file + ".jpg");
+
+            file = File.Exists(png) ? png : File.Exists(jpg) ? jpg : null;
+
+            if (file == null) return false;
 
             using (Bitmap tmpl = Helper.Load(file))
             {
@@ -126,7 +132,7 @@ namespace RoKBot.Utils
                 {
                     using (Bitmap cropped = Helper.Crop(screen, new Rectangle { X = Math.Max(0, x - tmpl.Width), Y = Math.Max(0, y - tmpl.Height), Width = tmpl.Width * 2, Height = tmpl.Height * 2 }))
                     {
-                        return Helper.Find(tmpl, cropped, similarityThreshold) != null;
+                        return Helper.Find(tmpl, cropped, similarityThreshold) != null;                        
                     }
                 }
             }
@@ -135,8 +141,12 @@ namespace RoKBot.Utils
         public static bool Match(string file, out int x, out int y, float similarityThreshold = 0.9f)
         {
             x = y = 0;
-            file = Path.Combine("assets", file + ".jpg");
-            if (!File.Exists(file)) return false;
+            string png = Path.Combine("assets", file + ".png");
+            string jpg = Path.Combine("assets", file + ".jpg");
+
+            file = File.Exists(png) ? png : File.Exists(jpg) ? jpg : null;
+
+            if (file == null) return false;
 
             using (Bitmap tmpl = Helper.Load(file))
             {
@@ -478,29 +488,35 @@ namespace RoKBot.Utils
     {
         static bool CommitTraining(string type)
         {
-            bool trained = Tap(0x1d7, 0x169, "icon.clock"); // click train
+            Wait(2, 3);
+            bool trainable = !Match(0x1e4, 0x15f, "button.speedup", 0.95f);
 
-            if (!trained)
+            if (!trainable)
             {
                 Tap(0x226, 0x64); // close
             }
-
-            Wait(2, 3);
-
-            if (Match("button.getmore", out int x, out int y))
+            else
             {
-                Tap(0x1f7, 0x82); // close
+                Tap(0x1e4, 0x15f); // click train
                 Wait(1, 2);
-                Tap(0x225, 0x66); // close
 
-                trained = false;
+                if (Match("button.getmore", out int x, out int y))
+                {
+                    trainable = false;
+
+                    Tap(0x1f7, 0x82); // close
+                    Wait(1, 2);
+                    Tap(0x225, 0x66); // close                    
+                }
+                else
+                {
+                    Console.WriteLine("Traning " + type);
+                }
             }
-
-            if (trained) Console.WriteLine("Traning " + type);
 
             OpenMap();
 
-            return trained;
+            return trainable;
         }
 
         public static bool TrainInfantry()

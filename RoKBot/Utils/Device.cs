@@ -16,7 +16,7 @@ namespace RoKBot.Utils
         
         static Device()
         {
-            server.StartServer(@"D:\Program Files\Microvirt\MEmu\adb.exe", restartServerIfNewer: true);
+            server.StartServer(@"D:\Microvirt\MEmu\MEmu\adb.exe", restartServerIfNewer: true);
             AdbClient.Instance.Connect("localhost:21503");
             devices = AdbClient.Instance.GetDevices();
             
