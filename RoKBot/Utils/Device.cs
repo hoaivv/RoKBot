@@ -10,7 +10,6 @@ namespace RoKBot.Utils
     public static class Device
     {
         static AdbServer server = new AdbServer();
-        static ConsoleOutputReceiver receiver = new ConsoleOutputReceiver();
         static List<DeviceData> devices;
         
         static Device()
@@ -21,16 +20,19 @@ namespace RoKBot.Utils
 
         public static void Tap(int x, int y)
         {
+            ConsoleOutputReceiver receiver = new ConsoleOutputReceiver();
             AdbClient.Instance.ExecuteRemoteCommand("input tap " + x + " " + y, devices[0], receiver);
         }
 
         public static void StopROK()
         {
+            ConsoleOutputReceiver receiver = new ConsoleOutputReceiver();
             AdbClient.Instance.ExecuteRemoteCommand("am force-stop com.lilithgame.roc.gp", devices[0], receiver);
         }
 
         public static void StartROK()
         {
+            ConsoleOutputReceiver receiver = new ConsoleOutputReceiver();
             AdbClient.Instance.ExecuteRemoteCommand("monkey -p com.lilithgame.roc.gp -v 500", devices[0], receiver);
         }
 
@@ -38,6 +40,7 @@ namespace RoKBot.Utils
         {
             get
             {
+                ConsoleOutputReceiver receiver = new ConsoleOutputReceiver();
                 AdbClient.Instance.ExecuteRemoteCommand("screencap /sdcard/screen.png", devices[0], receiver);
 
                 using (SyncService service = new SyncService(devices[0]))

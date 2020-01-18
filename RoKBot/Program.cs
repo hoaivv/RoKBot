@@ -38,10 +38,10 @@ namespace RoKBot
 
                 while (true)
                 {
-                    Device.StartROK();
-
                     Console.WriteLine();
                     Console.WriteLine("Starting ROK");
+
+                    Device.StartROK();
 
                     while (!Routine.IsReady) Routine.Wait(1, 2);
 
@@ -55,7 +55,7 @@ namespace RoKBot
 
                     foreach (Func<bool> task in tasks.OrderBy(i => random.Next()))
                     {
-                        if (random.Next(0, 101) < 30) continue;
+                        if (random.Next(0, 101) < 30 && task != Routine.GatherResources) continue;
 
                         Console.WriteLine();
                         Console.WriteLine("Running " + task.Method.Name);
@@ -67,6 +67,8 @@ namespace RoKBot
                     Routine.SwitchAccount();
 
                     Device.StopROK();
+
+                    Routine.Wait(40, 80);
                 }
 
             }
@@ -81,13 +83,17 @@ namespace RoKBot
         {
             while (true)
             {
-                //Routine.ReadMails();
+                Routine.GatherWood();
+                Console.WriteLine(".");
+
+                /*
                 using (Bitmap screen = Collector.CaptureScreen(out Rectangle bounds))
                 {
                     Point pos = Mouse.GetCursorPosition();
 
                     Console.WriteLine("X: " + ((double)(pos.X - bounds.X) / bounds.Width).ToString("0.00") + " Y: " + ((double)(pos.Y - bounds.Y) / bounds.Height).ToString("0.00") + " W: " + bounds.Width + " H: " + bounds.Height);
                 }
+                */
             }
 
         }

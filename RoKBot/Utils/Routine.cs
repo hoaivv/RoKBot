@@ -408,7 +408,7 @@ namespace RoKBot.Utils
 
             Wait(3,5);
 
-            if (!Routine.Click(.04, .73, "button.search")) // open gathering menu
+            if (!Click(.04, .73, "button.search")) // open gathering menu
             {
                 return false;
             }
@@ -963,8 +963,9 @@ namespace RoKBot.Utils
                 
                 Wait(2, 3);
 
-                if (Click(.7, .66, "button.investigate"))
+                if (Match(.7, .66, "button.investigate", 0.95f))
                 {
+                    Click(.7, .66);
                     Wait(2, 3);
 
                     if (!Match(.97, .17, "icon.investigate")) Click(.78, .27, "button.send");
@@ -981,7 +982,7 @@ namespace RoKBot.Utils
                 }
                 else
                 {
-                    Click(.5, 5);
+                    Click(.5, .5);
                     Wait(1, 2);
                 }
 
