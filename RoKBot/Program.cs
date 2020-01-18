@@ -25,7 +25,6 @@ namespace RoKBot
                 Routine.ClaimVIP,
                 Routine.Recruit,
                 Routine.Explore,
-                Routine.CollectResources,
                 Routine.TrainTroops,
                 Routine.ClaimQuests,
                 Routine.Build,
@@ -36,13 +35,13 @@ namespace RoKBot
 
                 Random random = new Random((int)(DateTime.UtcNow.Ticks % int.MaxValue));
 
+                Console.WriteLine();
+                Console.WriteLine("Starting ROK");
+
+                Device.Run("com.lilithgame.roc.gp", "com.harry.engine.MainActivity");
+
                 while (true)
-                {
-                    Console.WriteLine();
-                    Console.WriteLine("Starting ROK");
-
-                    Device.StartROK();
-
+                {                    
                     while (!Routine.IsReady) Routine.Wait(1, 2);
 
                     Console.WriteLine();
@@ -65,8 +64,6 @@ namespace RoKBot
                     Console.WriteLine("Running SwitchAccount");
                     Console.WriteLine();
                     Routine.SwitchAccount();
-
-                    Device.StopROK();
 
                     Routine.Wait(40, 80);
                 }

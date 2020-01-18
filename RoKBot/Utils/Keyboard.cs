@@ -7,9 +7,11 @@ namespace RoKBot.Utils
     {
         public static void Send(ScanCode key)
         {
-            INPUT Input = new INPUT();
+            INPUT Input = new INPUT
+            {
+                type = 1 // 1 = Keyboard Input
+            };
 
-            Input.type = 1; // 1 = Keyboard Input
             Input.U.ki.wScan = key;
             Input.U.ki.dwFlags = KEYEVENTF.SCANCODE;
 

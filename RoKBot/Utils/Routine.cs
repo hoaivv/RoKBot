@@ -11,16 +11,6 @@ namespace RoKBot.Utils
 {
     static partial class Routine
     {
-        [Flags]
-        public enum Options
-        {
-            None = 0,
-            Optional = 1,
-            Click = 2,
-            IgnoreVerification = 4,
-            NoCache = 8
-        }
-
         [ProtoContract]
         class CachedRectangle
         {
@@ -52,12 +42,12 @@ namespace RoKBot.Utils
             Cache<string, CachedRectangle>.Delete(file);
         }
 
-        public static bool Click(double percentageX, double percentageY, int randomThreshold = 10)
+        public static bool Tap(int x, int y, int randomThreshold = 10)
         {            
             using (Bitmap screen = Device.Screen)
             {                
-                int x = (int)(screen.Width * percentageX) + RandomGenerator.Next((-randomThreshold * screen.Width / 1770) / 2, (randomThreshold * screen.Width / 1770) / 2 + 1);
-                int y = (int)(screen.Height * percentageY) + RandomGenerator.Next((-randomThreshold * screen.Width / 1770) / 2, (randomThreshold * screen.Width / 1770) / 2 + 1);
+                x += RandomGenerator.Next(-randomThreshold / 2, randomThreshold / 2 + 1);
+                y += RandomGenerator.Next(-randomThreshold / 2, randomThreshold / 2 + 1);
 
                 Device.Tap(x, y);
 
@@ -65,187 +55,129 @@ namespace RoKBot.Utils
             }
         }
 
-        public static bool Click(double percentageX, double percentageY, string file, Options options = Options.None, int randomThreshold = 10)
+        public static bool Tap(int x, int y, string file, int randomThreshold = 10)
         {
             file = Path.Combine("assets", file + ".jpg");
-            if (!File.Exists(file) && !options.HasFlag(Options.Optional)) return false;
+            if (!File.Exists(file)) return false;
 
-            using (Bitmap image = AForge.Imaging.Image.FromFile(file))
+            using (Bitmap tmpl = Helper.Load(file))
             {
                 using (Bitmap screen = Device.Screen)
-                {                   
-                    using (Bitmap buffer = Collector.Uniform(image, screen))
-                    {                        
-                        using (Bitmap cropped = new Bitmap(buffer.Width * 2, buffer.Height * 2, PixelFormat.Format24bppRgb))
+                {
+                    using (Bitmap cropped = new Bitmap(tmpl.Width * 2, tmpl.Height * 2, PixelFormat.Format24bppRgb))
+                    {
+                        using (Graphics g = Graphics.FromImage(cropped))
                         {
-                            using (Graphics g = Graphics.FromImage(cropped))
+                            g.DrawImage(screen, 0, 0, new Rectangle { X = Math.Max(0, x - tmpl.Width), Y = Math.Max(0, y - tmpl.Height), Width = tmpl.Width * 2, Height = tmpl.Height * 2 }, GraphicsUnit.Pixel);
+
+                            if (Helper.Find(tmpl, cropped) != null)
                             {
-                                int x = (int)(screen.Width * percentageX);
-                                int y = (int)(screen.Height * percentageY);
+                                x += RandomGenerator.Next(-randomThreshold / 2, randomThreshold / 2 + 1);
+                                y += RandomGenerator.Next(-randomThreshold / 2, randomThreshold / 2 + 1);
 
-                                g.DrawImage(screen, 0, 0, new Rectangle { X = Math.Max(0, x - buffer.Width), Y = Math.Max(0, y - buffer.Height), Width = buffer.Width * 2, Height = buffer.Height * 2 }  , GraphicsUnit.Pixel);
+                                Device.Tap(x, y);
 
-                                if (Collector.Find(buffer, cropped) != null)
-                                {
-                                    x += RandomGenerator.Next(-(randomThreshold * buffer.Width / image.Width ) / 2, (randomThreshold * buffer.Width / image.Width) / 2 + 1);
-                                    y += RandomGenerator.Next(-(randomThreshold * buffer.Width / image.Width) / 2, (randomThreshold * buffer.Width / image.Width) / 2 + 1);
+                                return true;
+                            }
 
-                                    Device.Tap(x, y);
-
-                                    return true;
-                                }
-
-                                return options.HasFlag(Options.Optional);                                
-                            }                            
+                            return false;
                         }
                     }
                 }
             }
         }
 
-        public static bool Click(string file, Options options = Options.None)
+        public static bool Tap(string file, int randomThreshold = 10)
         {
             file = Path.Combine("assets", file + ".jpg");
-            if (!File.Exists(file) && !options.HasFlag(Options.Optional)) return false;            
+            if (!File.Exists(file)) return false;            
 
-            using (Bitmap image = AForge.Imaging.Image.FromFile(file))
+            using (Bitmap tmpl = Helper.Load(file))
             {
                 using (Bitmap screen = Device.Screen)
                 {
-                    object result = null;
+                    object result = Helper.Find(tmpl, screen);
 
-                    if (!Cache<string, CachedRectangle>.HasEntry(file))
-                    {
-                        using (Bitmap buffer = Collector.Uniform(image, screen))
-                        {                            
-                            result = Collector.Find(buffer, screen);
-                        }
-                    }
-                    else
-                    {
-                        if (!options.HasFlag(Options.IgnoreVerification))
-                        {
-                            using (Bitmap buffer = Collector.Uniform(image, screen))
-                            {                                
-                                using (Bitmap cropped = new Bitmap(buffer.Width, buffer.Height, PixelFormat.Format24bppRgb))
-                                {
-                                    using (Graphics g = Graphics.FromImage(cropped))
-                                    {
-                                        g.DrawImage(screen, 0, 0, Cache<string, CachedRectangle>.Retrive(file), GraphicsUnit.Pixel);
-                                    }
-
-                                    result = Collector.Find(buffer, cropped);
-                                }
-
-                                if (result != null)
-                                {
-                                    result = (Rectangle)Cache<string, CachedRectangle>.Retrive(file);
-                                }
-                            }
-                        }
-                        else
-                        {
-                            result = (Rectangle)Cache<string, CachedRectangle>.Retrive(file);
-                        }
-                    }
-
-                    if (result == null && !options.HasFlag(Options.Optional)) return false;
+                    if (result == null) return false;
 
                     Rectangle r = (Rectangle)result;
 
-                    int x = r.Left + r.Width / 2 + RandomGenerator.Next(-(int)(0.075 * r.Width), +(int)(0.075 * r.Width));
-                    int y = r.Top + r.Height / 2 + RandomGenerator.Next(-(int)(0.075 * r.Height), +(int)(0.075 * r.Height)); ;
+                    int x = r.Left + r.Width / 2;
+                    int y = r.Top + r.Height / 2;
+
+                    x += RandomGenerator.Next(-randomThreshold / 2, randomThreshold / 2 + 1);
+                    y += RandomGenerator.Next(-randomThreshold / 2, randomThreshold / 2 + 1);
 
                     Device.Tap(x, y);
-
-
-                    if (!options.HasFlag(Options.NoCache))
-                    {
-                        Cache<string, CachedRectangle>.Update(file, r);
-                    }
 
                     return true;
                 }
             }
         }
 
-        public static bool Match(double percentageX, double percentageY, string file, float threshold = 0.9f)
+        public static bool Match(int x, int y, string file, float similarityThreshold = 0.9f)
         {
             file = Path.Combine("assets", file + ".jpg");
             if (!File.Exists(file)) return false;
 
-            using (Bitmap image = AForge.Imaging.Image.FromFile(file))
+            using (Bitmap tmpl = Helper.Load(file))
             {
                 using (Bitmap screen = Device.Screen)
                 {
-                    using (Bitmap buffer = Collector.Uniform(image, screen))
-                    {                        
-                        using (Bitmap cropped = new Bitmap(buffer.Width * 2, buffer.Height * 2, PixelFormat.Format24bppRgb))
-                        {
-                            using (Graphics g = Graphics.FromImage(cropped))
-                            {
-                                int x = (int)(screen.Width * percentageX);
-                                int y = (int)(screen.Height * percentageY);
-
-                                g.DrawImage(screen, 0, 0, new Rectangle { X = Math.Max(0, x - buffer.Width), Y = Math.Max(0, y - buffer.Height), Width = buffer.Width * 2, Height = buffer.Height * 2 }, GraphicsUnit.Pixel);
-
-                                return Collector.Find(buffer, cropped, threshold) != null;                                
-                            }
-                        }
+                    using (Bitmap cropped = Helper.Crop(screen, new Rectangle { X = Math.Max(0, x - tmpl.Width), Y = Math.Max(0, y - tmpl.Height), Width = tmpl.Width * 2, Height = tmpl.Height * 2 }))
+                    {
+                        return Helper.Find(tmpl, cropped, similarityThreshold) != null;
                     }
                 }
             }
         }
 
-        public static bool Match(string file, out double percentageX, out double percentageY, float threshold = 0.9f)
+        public static bool Match(string file, out int x, out int y, float similarityThreshold = 0.9f)
         {
-            percentageX = percentageY = 0;
+            x = y = 0;
             file = Path.Combine("assets", file + ".jpg");
             if (!File.Exists(file)) return false;
 
-            using (Bitmap image = AForge.Imaging.Image.FromFile(file))
+            using (Bitmap tmpl = Helper.Load(file))
             {
                 using (Bitmap screen = Device.Screen)
                 {
-                    using (Bitmap buffer = Collector.Uniform(image, screen))
+                    object test = Helper.Find(tmpl, screen, similarityThreshold);
+
+                    if (test != null)
                     {
-                        object test = Collector.Find(buffer, screen, threshold);
+                        Rectangle r = (Rectangle)test;
 
-                        if (test != null)
-                        {
-                            Rectangle r = (Rectangle)test;
+                        x = r.X + r.Width / 2;
+                        y = r.Y + r.Height / 2;
 
-                            percentageX = (double)(r.X + r.Width / 2) / screen.Width;
-                            percentageY = (double)(r.Y + r.Height / 2) / screen.Height;
-
-                            return true;
-                        }
-
-                        return false;
+                        return true;
                     }
+
+                    return false;
                 }
             }
-
         }
 
         public static void Wait(int minSeconds, int maxSeconds)
         {            
-            Thread.CurrentThread.Join(RandomGenerator.Next(minSeconds * 1000, maxSeconds * 1000));
-        }
-
+            Thread.CurrentThread.Join(RandomGenerator.Next(minSeconds * 1000, maxSeconds * 1000 + 1));
+        }        
     }
+
+    
 
     partial class Routine
     {
-        public static bool IsReady => Match(.05, .91, "button.city") || Match(.05, .91, "button.map");
+        public static bool IsReady => Match(0x1e, 0x1bf, "button.city") || Match(0x1e, 0x1bf, "button.map");
 
         public static void OpenCity()
         {
             while (!IsReady) Wait(1, 2);
 
-            if (Match(.04, .76, "button.search", 0.95f))
+            if (Match(0x1d, 0x185, "button.search", 0.95f))
             {
-                Click(.05, .91);
+                Tap(0x1e, 0x1bf);
                 Wait(2, 3);
             }            
         }
@@ -254,9 +186,9 @@ namespace RoKBot.Utils
         {
             while (!IsReady) Wait(1, 2);
 
-            if (!Match(.04, .76, "button.search", 0.95f))
+            if (!Match(0x1d, 0x185, "button.search", 0.95f))
             {
-                Click(.05, .91); 
+                Tap(0x1e, 0x1bf); 
                 Wait(2, 3);
             }
         }
@@ -279,15 +211,16 @@ namespace RoKBot.Utils
         public static bool ClaimDaily()
         {
             OpenMap();            
-            Click(.95, .03, 0);
+            Tap(0x25d, 0xc, 0);
             Wait(2, 3);
-            if (Click("icon.daily", Options.NoCache))
+            if (Tap("icon.daily"))
             {
                 Wait(2, 3);
-                Click(.89, .23);
+                Tap(0x23f, 0x91);
+                Wait(1, 2);
             }
 
-            Click(.03, .05); // back;
+            Tap(0x13, 0x13); // back;
 
             return true;
         }
@@ -299,13 +232,13 @@ namespace RoKBot.Utils
         {
             OpenCity();
 
-            if (Click(.41,.69, "icon.heal"))
+            if (Tap(0xf8,0x156, "icon.heal"))
             {
                 Wait(2, 3);
-                if (Click(.71,.82, "icon.clock"))
+                if (Tap(0x1ca,0x164, "icon.clock"))
                 {
                     Wait(2, 3);
-                    Click(.42, .73); // request help
+                    Tap(0xf9, 0x161); // request help
                     Wait(1, 2);
                     OpenMap();
 
@@ -315,12 +248,12 @@ namespace RoKBot.Utils
                 }
                 else
                 {
-                    Click(.85, .11); // close
+                    Tap(0x221, 0x65); // close
                 }
             }
             else
             {
-                Click(.42, .73);
+                Tap(0xf8, 0x156); // collect healed troops
                 Wait(1, 2);
                 OpenMap();
             }
@@ -334,30 +267,39 @@ namespace RoKBot.Utils
         static bool SendGatheringTroops(string type)
         {
             Wait(2, 3);
-            Click(.5, .5); // click food icon in map
+            Tap(0x13f, 0xf1); // click food icon in map
 
-            Wait(3, 5);
-            Click(.74, .68); // click gather button
+            Wait(1, 2);
+            Tap(0x1dd, 0x132); // click gather button
 
-            Wait(3, 5);
+            Wait(1, 2);
 
-            if (Click(.78, .19, "action.troop"))
+            if (Tap(0x1f5, 0x83, "action.troop"))
             {
-                Wait(3, 5);
+                Wait(2, 3);
 
-                if (!Match(.73, .9,"icon.notroops") && Click(.72, .85, "action.march"))
+                if (Tap(0x1ca, 0x16e, "action.march"))
                 {
-                    Console.WriteLine("Gathering " + type);
-                    return true;
+                    Wait(1, 1);
+
+                    if (!Match(0x1ca, 0x16e, "action.march"))
+                    {
+                        Console.WriteLine("Gathering " + type);
+                        return true;
+                    }
+                    else
+                    {
+                        Tap(0x22c, 0x53); // close
+                    }
                 }
                 else
                 {
-                    Click(.87, .06); // close
+                    Tap(0x22c, 0x53); // close
                 }
             }
             else
             {
-                Click(.5, .5);
+                Tap(0x13f, 0xf1);
             }
 
             return false;
@@ -369,32 +311,30 @@ namespace RoKBot.Utils
 
             OpenMap();
 
-            Wait(3,5);
-
-            if (!Click(.04, .76, "button.search")) // open gathering menu
+            if (!Tap(0x1c, 0x186, "button.search")) // open gathering menu
             {
                 return false;
             }
 
-            Wait(3,5);
-            Click(.35, .85); // click food icon in menu
-
-            Wait(3, 5);
-
-            if (!Match(.35, .66, "label.search")) return false;
-
-            Click(.42, .56, 0); // max level;
-
             Wait(1,2);
-            Click(.35, .66);
+            Tap(0xdf, 0x1b4); // click food icon in menu
 
             Wait(1, 2);
-            while (Match(.35, .66, "label.search"))
+
+            if (!Match("label.search", out int x, out int y)) return false;
+
+            Tap(0x114, 0x141, 0); // max level;
+
+            Wait(0,1);
+            Tap(x, y);
+
+            Wait(0, 1);
+            while (Match(x, y, "label.search"))
             {
-                Click(.24, .55); // minus
-                Wait(1, 2);
-                Click(.35, .66); // click search
-                Wait(1, 2);
+                Tap(0x9c, 0x141); // minus
+                Wait(0, 1);
+                Tap(x, y); // click search
+                Wait(0, 1);
             }
 
             return SendGatheringTroops("food");
@@ -406,32 +346,30 @@ namespace RoKBot.Utils
 
             OpenMap();
 
-            Wait(3,5);
-
-            if (!Click(.04, .73, "button.search")) // open gathering menu
+            if (!Tap(0x1c, 0x186, "button.search")) // open gathering menu
             {
                 return false;
             }
 
-            Wait(3,5);
-            Click(.50, .85); // click wood icon in menu
-
-            Wait(3, 5);
-
-            if (!Match(.50, .66, "label.search")) return false;
-
-            Click(.57, .56, 0); // max level;
+            Wait(1, 2);
+            Tap(0x13e, 0x1b4); // click wood icon in menu
 
             Wait(1, 2);
-            Click(.50, .66);
 
-            Wait(1, 2);
-            while (Match(.50, .66, "label.search"))
+            if (!Match("label.search", out int x, out int y)) return false;
+
+            Tap(0x174, 0x141, 0); // max level;
+
+            Wait(0, 1);
+            Tap(x, y);
+
+            Wait(0, 1);
+            while (Match(x, y, "label.search"))
             {
-                Click(.39, .55); // minus
-                Wait(1, 2);
-                Click(.50, .66); // click search
-                Wait(1, 2);
+                Tap(0xfc, 0x141); // minus
+                Wait(0, 1);
+                Tap(x, y); // click search
+                Wait(0, 1);
             }
 
             return SendGatheringTroops("wood");
@@ -443,31 +381,30 @@ namespace RoKBot.Utils
 
             OpenMap();
 
-            Wait(3,5);
-            if (!Click(.04, .73, "button.search")) // open gathering menu
+            if (!Tap(0x1c, 0x186, "button.search")) // open gathering menu
             {
                 return false;
             }
 
-            Wait(3,5);
-            Click(.65, .85); // click stone icon in menu
-
-            Wait(3, 5);
-            
-            if (!Match(.65, .66, "label.search")) return false;
-
-            Click(.72, .56, 0); // max level;
+            Wait(1, 2);
+            Tap(0x1a0, 0x1b4); // click stone icon in menu
 
             Wait(1, 2);
-            Click(.65, .66); // click search
+
+            if (!Match("label.search", out int x, out int y)) return false;
+
+            Tap(0x1d3, 0x141, 0); // max level;
+
+            Wait(0, 1);
+            Tap(x, y);
 
             Wait(1, 2);
-            while (Match(.65, .66, "label.search"))
+            while (Match(x, y, "label.search"))
             {
-                Click(.54, .55); // minus
-                Wait(1, 2);
-                Click(.65, .66); // click search
-                Wait(1, 2);
+                Tap(0x15b, 0x141); // minus
+                Wait(0, 1);
+                Tap(x, y); // click search
+                Wait(0, 1);
             }
 
             return SendGatheringTroops("stone");
@@ -479,31 +416,30 @@ namespace RoKBot.Utils
 
             OpenMap();
 
-            //Wait(3,5);
-            if (!Click(.04, .73, "button.search")) // open gathering menu
+            if (!Tap(0x1c, 0x186, "button.search")) // open gathering menu
             {
                 return false;
             }
 
-            Wait(3,5);
-            Click(.80, .85); // click gold icon in menu
-
-            Wait(3, 5);
-
-            if (!Match(.80, .66, "label.search")) return false;
-            
-            Click(.87, .56, 0); // max level;
+            Wait(1, 2);
+            Tap(0x200, 0x1b4); // click gold icon in menu
 
             Wait(1, 2);
-            Click(.80, .66);
 
-            Wait(1, 2);
-            while (Match(.80, .66, "label.search"))
+            if (!Match("label.search", out int x, out int y)) return false;
+
+            Tap(0x231, 0x141, 0); // max level;
+
+            Wait(0, 1);
+            Tap(x, y);
+
+            Wait(0, 1);
+            while (Match(x, y, "label.search"))
             {
-                Click(.69, .55); // minus
-                Wait(1, 2);
-                Click(.80, .66); // click search
-                Wait(1, 2);
+                Tap(0x1b9, 0x141); // minus
+                Wait(0, 1);
+                Tap(x, y); // click search
+                Wait(0, 1);
             }
 
             return SendGatheringTroops("gold");
@@ -542,25 +478,27 @@ namespace RoKBot.Utils
     {
         static bool CommitTraining(string type)
         {
-            bool trained = Click(.73, .84, "icon.clock"); // click train
+            bool trained = Tap(0x1d7, 0x169, "icon.clock"); // click train
 
             if (!trained)
             {
-                Click(.85, .13); // close
+                Tap(0x226, 0x64); // close
             }
 
             Wait(2, 3);
 
-            if (Match(.5, .68, "button.getmore"))
+            if (Match("button.getmore", out int x, out int y))
             {
-                Click(.79, .2); // close
+                Tap(0x1f7, 0x82); // close
                 Wait(1, 2);
-                Click(.85, .13); // close
+                Tap(0x225, 0x66); // close
 
                 trained = false;
             }
 
             if (trained) Console.WriteLine("Traning " + type);
+
+            OpenMap();
 
             return trained;
         }
@@ -569,13 +507,17 @@ namespace RoKBot.Utils
         {
             OpenCity();
 
-            Click(.5, .4); 
-            Wait(1, 2);
-            Click(.5, .4); 
+            Tap(0x13d, 0xb2); 
             Wait(1, 2);
 
-            if (!Click(.61, .58, "icon.infantry")) return false;
-            Wait(1, 2);
+            if (!Tap("icon.infantry"))
+            {
+                Tap(0x13d, 0xb2);
+                Wait(1, 2);
+
+                if (!Tap("icon.infantry")) return false;
+                Wait(1, 2);
+            }            
 
             return CommitTraining("infantry");
         }
@@ -584,13 +526,17 @@ namespace RoKBot.Utils
         {
             OpenCity();
 
-            Click(.61, .53); 
-            Wait(1, 2);
-            Click(.61, .53); 
+            Tap(0x1a0, 0xf0); 
             Wait(1, 2);
 
-            if (!Click(.7, .7, "icon.archer")) return false;
-            Wait(1, 2);
+            if (!Tap("icon.archer"))
+            {
+                Tap(0x1a0, 0xf0);
+                Wait(1, 2);
+
+                if (!Tap("icon.archer")) return false;
+                Wait(1, 2);
+            }            
 
             return CommitTraining("archer");
         }
@@ -599,13 +545,18 @@ namespace RoKBot.Utils
         {
             OpenCity();
 
-            Click(.5, .65); 
+            Tap(0x144, 0x136); 
             Wait(1, 2);
-            Click(.5, .65); 
-            Wait(1, 2);
+            
 
-            if (!Click(.61, .83, "icon.cavalry")) return false;
-            Wait(1, 2);
+            if (!Tap("icon.cavalry"))
+            {
+                Tap(0x144, 0x136);
+                Wait(1, 2);
+
+                if (!Tap("icon.cavalry")) return false;
+                Wait(1, 2);
+            }            
 
             return CommitTraining("cavalry");
         }
@@ -614,15 +565,20 @@ namespace RoKBot.Utils
         {
             OpenCity();
 
-            Click(.39, .52); 
+            Tap(0xe7, 0xf2); 
             Wait(1, 2);
-            Click(.39, .52); 
-            Wait(1, 2);
+            
 
-            if (!Click(.5, .71, "icon.siege")) return false;
-            Wait(1, 2);
+            if (!Tap("icon.siege"))
+            {
+                Tap(0xe7, 0xf2);
+                Wait(1, 2);
 
-            Click(.49, .28); // T1            
+                if (!Tap("icon.siege")) return false;
+                Wait(1, 2);                
+            }
+
+            Tap(0x13a, 0x94); // T1
             Wait(1, 2);
 
             return CommitTraining("siege");
@@ -630,7 +586,7 @@ namespace RoKBot.Utils
 
         public static bool TrainTroops()
         {
-            return TrainInfantry() & TrainCavalry() & TrainArcher() & TrainSiege();
+            return TrainInfantry() & TrainArcher() & TrainCavalry() & TrainSiege();
         }
     }
 
@@ -640,25 +596,27 @@ namespace RoKBot.Utils
         {
             OpenCity();
             
-            Click(.6, .3); // open menu
+            Tap(0x18f, 0x81); // open menu
             Wait(1, 2);
 
-            if (!Click(.71, .49, "button.recruit")) return false;
+            if (!Tap("button.recruit")) return false;
 
             bool recruited = false;
 
             Wait(3, 4);
-            while (Click(.33, .85, "button.open") || Click(.70, .85, "button.open"))
+            while (Tap(0xca, 0x16a, "button.open") || Tap(0x1c9, 0x16a, "button.open"))
             {
                 recruited = true;
                 Wait(5, 6);
-                while (Click(.30, .86, "button.confirm") || Click(.15, .84, "button.confirm")) Wait(5, 6);
+                while (Tap("button.confirm")) Wait(5, 6);
             }
 
             Wait(3, 4);
-            Click(.03, .09); // back
+            Tap(0x13, 0x13); // back
 
             if (recruited) Console.WriteLine("Keys used");
+
+            OpenMap();
 
             return true;
         }
@@ -670,13 +628,13 @@ namespace RoKBot.Utils
         {
             OpenCity();
 
-            if (Click(.28, .52, "collect.food") || Click(.28, .52, "collect.food.old")) Console.WriteLine("Food collected");
+            if (Tap(0x85, 0x109, "collect.food") || Tap(0x85, 0x109, "collect.food.old")) Console.WriteLine("Food collected");
             Wait(1, 2);
-            if (Click(.21, .43, "collect.wood") || Click(.21, .43, "collect.wood.old")) Console.WriteLine("Wood collected");
+            if (Tap(0x44, 0xdc, "collect.wood") || Tap(0x44, 0xdc, "collect.wood.old")) Console.WriteLine("Wood collected");
             Wait(1, 2);
-            if (Click(.28, .34, "collect.stone") || Click(.28, .34, "collect.stone.old")) Console.WriteLine("Stone collected");
+            if (Tap(0x8a, 0xad, "collect.stone") || Tap(0x8a, 0xad, "collect.stone.old")) Console.WriteLine("Stone collected");
             Wait(1, 2);
-            if (Click(.36, .26, "collect.gold") || Click(.36, .26, "collect.gold.old")) Console.WriteLine("Gold collected");
+            if (Tap(0xcd, 0x81, "collect.gold") || Tap(0xcd, 0x81, "collect.gold.old")) Console.WriteLine("Gold collected");
             Wait(1, 2);
 
             return true;
@@ -693,19 +651,19 @@ namespace RoKBot.Utils
 
             while (true)
             {
-                Click(.7, .4); // open menu
+                Tap(0x1ee, 0xbb); // open menu
 
                 Wait(1, 2);
-                if (!Click(.81, .6, "icon.explore")) break;
+                if (!Tap("icon.explore")) break;
 
                 Wait(2, 3);
-                if (Click(.78, .46, "button.explore") || Click(.78, .64, "button.explore") || Click(.78, .81, "button.explore"))
+                if (Tap(0x1f3, 0xda, "button.explore") || Tap(0x1f3, 0x11d, "button.explore") || Tap(0x1f3, 0x15f, "button.explore"))
                 {
                     Wait(2, 3);
-                    if (Click(.62, .73, "button.explore"))
+                    if (Tap(0x191, 0x13e, "button.explore"))
                     {
                         Wait(2, 3);
-                        send |= Click(.78, .27, "button.send") || Click(.78, .44, "button.send") || Click(.78, .60, "button.send");
+                        send |= Tap(0x1f6, 0x91, "button.send") || Tap(0x1f6, 0xd0, "button.send") || Tap(0x1f6, 0x110, "button.send");
                         Wait(2, 3);
 
                         OpenCity();
@@ -713,12 +671,14 @@ namespace RoKBot.Utils
                 }
                 else
                 {
-                    Click(.85, .11); // close                    
+                    Tap(0x221, 0x66); // close                    
                     break;
                 }
             }
 
             if (send) Console.WriteLine("Exploring");
+
+            OpenMap();
 
             return true;
         }
@@ -730,24 +690,24 @@ namespace RoKBot.Utils
         {
             OpenCity();
 
-            if (!Click(.64, .93, "button.campaign"))
+            if (!Tap(0x19e, 0x1c6, "button.campaign"))
             {
                 Wait(2, 3);
-                Click(.96, .93);
+                Tap(0x267, 0x1c6);
                 Wait(2, 3);
-                if (!Click(.64, .93, "button.campaign")) return false;
+                if (!Tap(0x19e, 0x1c6, "button.campaign")) return false;
             }
 
             Wait(2, 3);
-            Click(.16, .45);
+            Tap(0x6b, 0xdd);
             Wait(2, 3);
-            Click(.1, .32);
+            Tap(0x3e, 0xaf);
             Wait(2, 3);
-            if (Click(.5, .72, "button.confirm")) Console.WriteLine("Rewards claimed (Campaign)");
+            if (Tap(0x141, 0x145, "button.confirm")) Console.WriteLine("Rewards claimed (Campaign)");
             Wait(2, 3);
-            Click(.03, .07);
+            Tap(0x13, 0x13);
             Wait(2, 3);
-            Click(.03, .07);
+            Tap(0x13, 0x13);
             Wait(2, 3);
 
             return true;
@@ -760,59 +720,59 @@ namespace RoKBot.Utils
         {
             OpenCity();
             
-            if (!Click(.8, .9, "button.alliance"))
+            if (!Tap(0x202, 0x1c5, "button.alliance"))
             {
                 Wait(2, 3);
-                Click(.96, .9);
+                Tap(0x268, 0x1c5);
                 Wait(2, 3);
-                if (!Click(.8, .9, "button.alliance")) return false;
+                if (!Tap(0x202, 0x1c5, "button.alliance")) return false;
             }
 
             Wait(2, 3);
 
-            if (Match(.48, .55, "icon.war")) // check if account is a member of an alliance
+            if (Match(0x137, 0x109, "icon.war")) // check if account is a member of an alliance
             {
 
                 // HELP ALLIANCE MEMBERS
 
-                Click(.79, .56); // help icon in alliance menu
+                Tap(0x1fa, 0x108); // help icon in alliance menu
 
                 Wait(2, 3);
-                if (Click(.5, .88, "button.help")) // button help
+                if (Tap(0x13e, 0x184, "button.help")) // button help
                 {
                     Console.WriteLine("Allies helped");
                 }
                 else
                 {
-                    Click(.87, .08); // close button of help menu
+                    Tap(0x22e, 0x57); // close button of help menu
                 }
 
                 // COLLECT TERRITORY RESOURCES
 
                 Wait(2, 3);
-                Click(.69, .56); // territory icon in alliance menu
+                Tap(0x1b8, 0x109); // territory icon in alliance menu
                 Wait(2, 3);
-                Click(.8, .2); // claim button in territory menu
+                Tap(0x1f3, 0x7f); // claim button in territory menu
                 Wait(2, 3);
-                Click(.87, .07); // close button in territory menu
+                Tap(0x22e, 0x51); // close button in territory menu
 
                 // COLLECT GIFTS
 
                 bool hasGift = false;
 
                 Wait(2, 3);
-                Click(.69, .76); // gift icon in alliance menu
+                Tap(0x1b9, 0x156); // gift icon in alliance menu
                 Wait(2, 3);
-                Click(.52, .29); // normal tab in gift menu
+                Tap(0x153, 0xa3); // normal tab in gift menu
                 Wait(2, 3);
-                Click(.86, .29); // claim all icon
+                Tap(0x22a, 0xa0); // claim all icon
                 Wait(2, 3);
-                hasGift |= Click(.51, .72, "button.confirm");
+                hasGift |= Tap(0x143, 0x143, "button.confirm");
                 Wait(2, 3);
-                Click(.72, .29); // rare tab in gift menu
+                Tap(0x1d3, 0xa3); // rare tab in gift menu
 
                 Wait(2, 3);
-                if (Click(.76, .38, "button.claim.gift"))
+                if (Tap(0x1e7, 0xc9, "button.claim.gift"))
                 {
                     hasGift = true;
 
@@ -820,52 +780,52 @@ namespace RoKBot.Utils
                     {
                         Wait(2, 3);
                     }
-                    while (Click(.76, .51, "button.claim.gift"));
+                    while (Tap(0x1e7, 0xfa, "button.claim.gift"));
                 }
 
                 Wait(2, 3);
-                Click(.28, .60); // collect big chest
+                Tap(0xb2, 0x10c); // collect big chest
                 Wait(2, 3);
-                Click(.28, .60); // collect big chest
+                Tap(0xb2, 0x10c); // collect big chest
 
                 Wait(2, 3);
-                Click(.87, .08); // close button of gift menu
+                Tap(0x22d, 0x51); // close button of gift menu
 
                 if (hasGift) Console.WriteLine("Gifts claimed");
 
                 // DONATE                
 
                 Wait(2, 3);
-                Click(.59, .76); // technology icon in alliance menu
+                Tap(0x17a, 0x151); // technology icon in alliance menu
                 Wait(10, 11);
 
-                if (Match("label.recommendation", out double x, out double y))
+                if (Match("label.recommendation", out int x, out int y))
                 {
-                    Click(x, y + 0.07);
+                    Tap(x, y + 30);
                     bool donationMade = false;
                     Wait(2, 3);
 
-                    while (Click(.76, .74, "button.donate"))
+                    while (Tap(0x1e6, 0x14f, "button.donate"))
                     {
                         donationMade = true;
                         Wait(1, 2);
                     }
 
                     Wait(2, 3);
-                    Click(.85, .13); // close button of donate menu
+                    Tap(0x221, 0x65); // close button of donate menu
                     Wait(2, 3);
-                    Click(.87, .11); // close button of technology menu
+                    Tap(0x22d, 0x5f); // close button of technology menu
                    
                     if (donationMade) Console.WriteLine("Donated");
                 }
                 else
                 {
-                    Click(.87, .11); // close button of technology menu
+                    Tap(0x22d, 0x5f); // close button of technology menu
                 }
             }
 
             Wait(2, 3);
-            Click(.87, .08); // close button of alliance menu
+            Tap(0x22c, 0x52); // close button of alliance menu
 
             return true;
         }        
@@ -875,38 +835,35 @@ namespace RoKBot.Utils
     {
         public static bool ClaimQuests()
         {
-            OpenCity();
+            OpenCity();            
 
             Wait(2, 3);
-            Click(.05, .91, "button.city", Routine.Options.Optional);
-
-            Wait(2, 3);
-            if (Click(.03, .24, "button.quest")) // open quest menu
+            if (Tap(0x16, 0x91, "button.quest")) // open quest menu
             {
                 bool questClaimed = false;
 
                 Wait(2, 3);;
-                Click(.1, .26); // quest tab
+                Tap(0x37, 0x97); // quest tab
 
                 Wait(2, 3);
 
-                while (Click(.78, .36, "button.claim"))
+                while (Tap(0x1f5, 0xb0, "button.claim"))
                 {
                     questClaimed = true;
                     Wait(2, 3); // claim main quests
                 }
 
-                while (Click(.78, .54, "button.claim"))
+                while (Tap(0x1f5, 0x102, "button.claim"))
                 {
                     questClaimed = true;
                     Wait(2, 3); // claim side quests
                 }
 
                 Wait(2, 3);
-                Click(.1, .43); // daily tab
+                Tap(0x38, 0xda); // daily tab
 
                 Wait(2, 3);
-                while (Click(.79, .47, "button.claim"))
+                while (Tap(0x1f8, 0xe7, "button.claim"))
                 {
                     questClaimed = true;
                     Wait(2, 3); // claim daily objectives
@@ -914,13 +871,13 @@ namespace RoKBot.Utils
 
                 for (int i = 0; i < 5; i++)
                 {
-                    Click(.28 + i * 0.13, .28); // click chests
+                    Tap(0xb2 + i * 83, 0x9e); // click chests
                     Wait(2, 3);
-                    Click(.28 + i * 0.13, .28); // click chests
+                    Tap(0xb2 + i * 83, 0x9e); // click chests
                     Wait(2, 3);
                 }
 
-                Click(.85, .13); // close button of quest menu
+                Tap(0x222, 0x67); // close button of quest menu
 
                 if (questClaimed) Console.WriteLine("Quests claimed");
                 return true;
@@ -938,10 +895,10 @@ namespace RoKBot.Utils
 
             bool claimed = false;
 
-            Click(.96, .80); // open mails
+            Tap(0x265, 0x193); // open mails
             Wait(2, 3);
 
-            if (!Match(.86, .06, "label.mail")) return false;
+            if (!Match(0x226, 0x15, "label.mail")) return false;
 
             /*
             Wait(2, 3);
@@ -953,67 +910,67 @@ namespace RoKBot.Utils
             */
 
             Wait(2, 3);
-            Click(.2, .06); // report tab
+            Tap(0x80, 0x14); // report tab
             Wait(2, 3);
 
-            while (Click(.9, .43, "icon.view"))
+            while (Tap(0x242, 0x9a, "icon.view"))
             {
                 Wait(4, 5);
-                Click(.5, .5);
+                Tap(0x141, 0xe8);
                 
                 Wait(2, 3);
 
-                if (Match(.7, .66, "button.investigate", 0.95f))
+                if (Match(0x1c5, 0x129, "button.investigate", 0.95f))
                 {
-                    Click(.7, .66);
+                    Tap(0x1c5, 0x129);
                     Wait(2, 3);
 
-                    if (!Match(.97, .17, "icon.investigate")) Click(.78, .27, "button.send");
-                    if (!Match(.97, .35, "icon.investigate")) Click(.78, .44, "button.send");
-                    if (!Match(.97, .52, "icon.investigate")) Click(.78, .60, "button.send");
+                    if (!Match(0x26a, 0x79, "icon.investigate")) Tap(0x1f6, 0x91, "button.send");
+                    if (!Match(0x26a, 0xb8, "icon.investigate")) Tap(0x1f6, 0xd0, "button.send");
+                    if (!Match(0x26a, 0xfa, "icon.investigate")) Tap(0x1f6, 0x110, "button.send");
                     Wait(1, 2);
 
                     OpenCity();
 
-                    Click(.96, .80); // open mails
+                    Tap(0x265, 0x193); // open mails
                     Wait(2, 3);
 
                     break;
                 }
                 else
                 {
-                    Click(.5, .5);
+                    Tap(0x141, 0xe8);
                     Wait(1, 2);
                 }
 
                 OpenCity();
 
-                Click(.96, .80); // open mails
+                Tap(0x265, 0x193); // open mails
                 Wait(2, 3);
             }
 
-            Click(.11, .92); // claim all
+            Tap(0x47, 0x1c5); // claim all
             Wait(2, 3);
-            claimed |= (Click(.5, .72, "button.confirm"));
+            claimed |= (Tap(0x141, 0x144, "button.confirm"));
 
             
 
             Wait(2, 3);
-            Click(.31, .06); // alliance tab
+            Tap(0xcc, 0x14); // alliance tab
             Wait(2, 3);
-            Click(.11, .92); // claim all
+            Tap(0x47, 0x1c5); // claim all
             Wait(2, 3);
-            claimed |= (Click(.5, .72, "button.confirm"));
+            claimed |= (Tap(0x141, 0x144, "button.confirm"));
 
             Wait(2, 3);
-            Click(.43, .06); // system tab
+            Tap(0x11d, 0x14); // system tab
             Wait(2, 3);
-            Click(.11, .92); // claim all
+            Tap(0x47, 0x1c5); // claim all
             Wait(2, 3);
-            claimed |= (Click(.5, .72, "button.confirm"));
+            claimed |= (Tap(0x141, 0x144, "button.confirm"));
 
             Wait(2, 3);
-            Click(.96, .06); // close
+            Tap(0x268, 0x16); // close
 
             if (claimed) Console.WriteLine("Mails claimed");
 
@@ -1027,17 +984,17 @@ namespace RoKBot.Utils
         {
             OpenRandom();
             
-            Click(.12, .09); // open VIP menu
+            Tap(0x4b, 0x1e, 0); // open VIP menu
             Wait(2, 3);
-            Click(.73, .55); // claim chest
+            Tap(0x1d5, 0x102); // claim chest
             Wait(2, 3);
-            Click(.73, .54); // close popup
+            Tap(0x1d5, 0x102); // claim chest
             Wait(2, 3);
-            Click(.79, .25); // claim daily
+            Tap(0x1f3, 0x91); // claim daily
             Wait(2, 3);
-            Click(.79, .25); // close popup            
+            Tap(0x1f3, 0x91); // claim daily
             Wait(2, 3);
-            Click(.85, .11); // close
+            Tap(0x221, 0x65); // close
             Wait(2, 3);
 
             return true;
@@ -1050,48 +1007,44 @@ namespace RoKBot.Utils
         {
             OpenCity();
 
-            Click(.54, .19); // click building
+            Tap(0x155, 0x4a); // click building
 
             try
             {
                 Wait(1, 2);
-                if (!Click(.61, .53, "icon.build"))
+                if (!Tap("icon.build"))
                     return false;
-
+                
                 Wait(2, 3);
-                if (
-                    (!Match(.78, .31, "button.build", .95f) || !Click(.78, .31))
-                &&
-                    (!Match(.78, .54, "button.build", .95f) || !Click(.78, .54))
-                )
+                if (!Match("button.build", out int x, out int y, .95f) || !Tap(x, y))
                 {
-                    Click(.85, .12); // close
+                    Tap(0x221, 0x67); // close
                     return false;
                 }
 
                 Wait(2, 3);                
 
-                if (!Click("icon.upgrade", Options.NoCache))
+                if (!Tap("icon.upgrade"))
                     return false;
 
                 Wait(2, 3);
-                if (!Click(.77, .73, "button.upgrade"))
+                if (!Tap(0x1eb, 0x14a, "button.upgrade"))
                 {
-                    Click(.85, .12); // close
+                    Tap(0x21f, 0x64); // close
                     return false;
                 }
 
                 Wait(2, 3);
-                if (Match(.5, .66, "button.purchase") || Match(.5, .68, "button.getmore"))
+                if (Match("button.purchase", out int x1, out int y1) || Match("button.getmore", out int x2, out int y2))
                 {
-                    Click(.79, .2); // close
+                    Tap(0x1f6, 0x82); // close
                     Wait(1, 2);
-                    Click(.85, .12); // close
+                    Tap(0x21f, 0x64); // close
                     return false;
                 }
 
                 Wait(1, 2);
-                Click(.5, .41);                
+                Tap(0x141, 0xdd);                
 
                 Console.WriteLine("Build");
                 return true;
@@ -1106,38 +1059,38 @@ namespace RoKBot.Utils
 
     partial class Routine
     {
-        private static Queue<PointF> Accounts = new Queue<PointF>();
+        private static Queue<Point> Accounts = new Queue<Point>();
 
         public static bool SwitchAccount()
         {
             OpenRandom();
             
-            Click(.04, .1); // open profile
+            Tap(0x15, 0x15); // open profile
             Wait(2, 3);
-            Click(.77, .74); // open settings
+            Tap(0x1eb, 0x143); // open settings
             Wait(2, 3);
-            Click(.23, .54); // open character management
+            Tap(0x92, 0xf9); // open character management
             Wait(10, 15);
             
             if (Accounts.Count < 2)
             {
-                float x = .44f;
-                float y = .33f;
+                int x = 0x11c;
+                int y = 0xae;
 
                 Accounts.Clear();
 
                 while(Match(x, y, "bg.account"))
                 {
-                    Accounts.Enqueue(new PointF { X = x, Y = y });
+                    Accounts.Enqueue(new Point { X = x, Y = y });
                     
-                    if (x == .81f)
+                    if (x == 0x20d)
                     {
-                        x = .44f;
-                        y += .19f;
+                        x = 0x11c;
+                        y += 67;
                     }
                     else
                     {
-                        x = .81f;
+                        x = 0x20d;
                     }
                 }
             }
@@ -1149,29 +1102,30 @@ namespace RoKBot.Utils
 
                 while (count-- > 0)
                 {
-                    PointF pos = Accounts.Peek();
-                    Click(pos.X, pos.Y);
+                    Point pos = Accounts.Peek();
+                    Tap(pos.X, pos.Y);
                     Wait(2, 3);
 
                     Accounts.Enqueue(Accounts.Dequeue());
 
-                    if (Click(.63, .72, "button.yes"))
+                    if (Tap(0x197, 0x13c, "button.yes"))
                     {
                         Console.WriteLine("Account switched");
                         Wait(20, 25);
 
-                        while (!Match(.05, .91, "button.map")) Wait(2, 3);                        
+                        while (!IsReady) Wait(2, 3);                        
+
                         return true;
                     }                    
                 }                
             }
 
             Wait(2, 3);
-            Click(.85, .16); // close account management
+            Tap(0x221, 0x65); // close account management
             Wait(2, 3);
-            Click(.87, .11); // close settings
+            Tap(0x22d, 0x51); // close settings
             Wait(2, 3);
-            Click(.85, .16); // close profile
+            Tap(0x21d, 0x65); // close profile
 
             return false;
         }

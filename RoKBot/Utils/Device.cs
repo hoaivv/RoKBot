@@ -1,6 +1,8 @@
 ﻿using SharpAdbClient;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Threading;
@@ -14,8 +16,10 @@ namespace RoKBot.Utils
         
         static Device()
         {
-            server.StartServer(@"D:\Android\android-sdk\platform-tools\adb.exe", restartServerIfNewer: false);
+            server.StartServer(@"D:\Program Files\Microvirt\MEmu\adb.exe", restartServerIfNewer: true);
+            AdbClient.Instance.Connect("localhost:21503");
             devices = AdbClient.Instance.GetDevices();
+            
         }
 
         public static void Tap(int x, int y)
@@ -24,44 +28,89 @@ namespace RoKBot.Utils
             AdbClient.Instance.ExecuteRemoteCommand("input tap " + x + " " + y, devices[0], receiver);
         }
 
-        public static void StopROK()
+        public static void Reboot()
         {
-            ConsoleOutputReceiver receiver = new ConsoleOutputReceiver();
-            AdbClient.Instance.ExecuteRemoteCommand("am force-stop com.lilithgame.roc.gp", devices[0], receiver);
+            AdbClient.Instance.Reboot(devices[0]);
         }
 
-        public static void StartROK()
+        public static void Run(string packgate, string activity)
         {
             ConsoleOutputReceiver receiver = new ConsoleOutputReceiver();
-            AdbClient.Instance.ExecuteRemoteCommand("monkey -p com.lilithgame.roc.gp -v 500", devices[0], receiver);
+            AdbClient.Instance.ExecuteRemoteCommand("am start -n " + packgate + "/" + activity, devices[0], receiver);
+        }
+
+        public static void Kill(string package)
+        {
+            ConsoleOutputReceiver receiver = new ConsoleOutputReceiver();
+            AdbClient.Instance.ExecuteRemoteCommand("am force-stop " + package, devices[0], receiver);
         }
 
         public static Bitmap Screen
         {
             get
             {
-                ConsoleOutputReceiver receiver = new ConsoleOutputReceiver();
-                AdbClient.Instance.ExecuteRemoteCommand("screencap /sdcard/screen.png", devices[0], receiver);
+                bool verify = false;
 
-                using (SyncService service = new SyncService(devices[0]))
+                do
                 {
-                    using (MemoryStream ms = new MemoryStream())
+                    ConsoleOutputReceiver receiver = new ConsoleOutputReceiver();
+                    AdbClient.Instance.ExecuteRemoteCommand("screencap /sdcard/screen.png", devices[0], receiver);
+
+                    using (SyncService service = new SyncService(devices[0]))
                     {
-                        service.Pull("/sdcard/screen.png", ms, null, CancellationToken.None);
-
-                        using (Image image = Image.FromStream(ms))
+                        using (MemoryStream ms = new MemoryStream())
                         {
-                            Bitmap bitmap = new Bitmap(image.Width, image.Height, PixelFormat.Format24bppRgb);
+                            service.Pull("/sdcard/screen.png", ms, null, CancellationToken.None);
 
-                            using (Graphics g = Graphics.FromImage(bitmap))
+                            using (Image image = Image.FromStream(ms))
                             {
-                                g.DrawImage(image, 0, 0);
-                            }
+                                Bitmap bmp = new Bitmap(Math.Max(image.Width, image.Height), Math.Min(image.Width, image.Height), PixelFormat.Format24bppRgb);
 
-                            return bitmap;
+                                using (Graphics g = Graphics.FromImage(bmp))
+                                {
+                                    if (image.Height > image.Width)
+                                    {
+                                        g.TranslateTransform((float)bmp.Width / 2, (float)bmp.Height / 2);
+                                        g.RotateTransform(-90);
+                                        g.TranslateTransform(-(float)image.Width / 2, -(float)image.Height / 2);
+                                        g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                                    }
+
+                                    g.DrawImage(image, 0, 0);
+                                }
+
+                                object findResult = null;
+
+                                using (Bitmap test = new Bitmap(bmp.Width, 50, PixelFormat.Format24bppRgb))
+                                {
+                                    using (Graphics g = Graphics.FromImage(test))
+                                    {
+                                        g.DrawImage(bmp, 0, -90);
+                                    }
+
+                                    findResult = Helper.Find(Helper.Load("assets/label.verify.jpg"), test);
+                                    verify = findResult != null;
+                                }
+
+                                if (verify)
+                                {
+                                    bmp.Dispose();
+                                    Rectangle location = (Rectangle)findResult;
+
+                                    Tap(location.X + location.Width / 2, location.Y + 347);
+                                    Thread.CurrentThread.Join(3000);
+                                }
+                                else
+                                {
+                                    return bmp;
+                                }
+                            }
                         }
                     }
                 }
+                while (verify);
+
+                return null;
             }
         }
     }

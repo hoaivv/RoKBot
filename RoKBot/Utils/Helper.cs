@@ -8,7 +8,7 @@ using System.Threading;
 
 namespace RoKBot.Utils
 {
-    static class Collector
+    static class Helper
     {        
         [DllImport("user32.dll")]
         private static extern IntPtr GetForegroundWindow();
@@ -65,25 +65,43 @@ namespace RoKBot.Utils
 
             return bitmap;
         }
-        
 
-        public static Bitmap Uniform(Bitmap image, Bitmap bounds)
+        public static Bitmap Load(string file)
         {
-            Bitmap buffer = new Bitmap(image.Width * bounds.Width / 1770, image.Height * bounds.Height / 996, PixelFormat.Format24bppRgb);
-
-            using (Graphics g = Graphics.FromImage(buffer))
+            using (Bitmap image = (Bitmap)System.Drawing.Image.FromFile(file))
             {
-                g.DrawImage(image, new Rectangle { X = 0, Y = 0, Width = buffer.Width, Height = buffer.Height }, new Rectangle { X = 0, Y = 0, Width = image.Width, Height = image.Height }, GraphicsUnit.Pixel);
+                Bitmap buffer = new Bitmap(image.Width, image.Height, PixelFormat.Format24bppRgb);
+
+                using (Graphics g = Graphics.FromImage(buffer))
+                {
+                    g.DrawImage(image, 0, 0);
+                }
+
+                return buffer;
             }
-
-            return buffer;
         }
-
+        
         public static object Find(Bitmap template, Bitmap source, float threshold = 0.9f)
         {
             Rectangle[] results = new ExhaustiveTemplateMatching(threshold).ProcessImage(source, template).OrderByDescending(i => i.Similarity).Select(i => i.Rectangle).ToArray();
 
+            template.Save("D:\\template.jpg");
+            source.Save("D:\\source.jpg");
+
+
             return results.Length > 0 ? (object)results[0] : null;
+        }
+
+        public static Bitmap Crop(Bitmap image, Rectangle bounds)
+        {
+            Bitmap crop = new Bitmap(bounds.Width, bounds.Height, PixelFormat.Format24bppRgb);
+
+            using (Graphics g = Graphics.FromImage(crop))
+            {
+                g.DrawImage(image, 0, 0, bounds, GraphicsUnit.Pixel);
+            }
+
+            return crop;
         }
     }
 }
