@@ -7,12 +7,18 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading;
+using System.Threading.Tasks;
+using AForge.Imaging.Filters;
+using AForge.Imaging;
+using System.Drawing.Imaging;
+using AForge;
+using System.Runtime.InteropServices;
 
 namespace RoKBot
 {
     class Program
     {
-        static void Work()
+        static void RunRoutine()
         {
             try
             {
@@ -68,7 +74,7 @@ namespace RoKBot
                     Console.WriteLine();
                     Routine.SwitchAccount();
 
-                    Routine.Wait(40, 80);
+                    Routine.Wait(10, 20);
                 }
 
             }
@@ -78,24 +84,63 @@ namespace RoKBot
             }
         }
 
-
-        static void Test()
+        static void RunVerification()
         {
-            while (true)
+            try
             {
-                Routine.GatherWood();
-                Console.WriteLine(".");
+                bool paused = Paused;
 
-                /*
-                using (Bitmap screen = Collector.CaptureScreen(out Rectangle bounds))
+                while (true)
                 {
-                    Point pos = Mouse.GetCursorPosition();
+                    while (Device.Match("button.verify", out Rectangle verify, null, 0.95f))
+                    {
+                        paused = Paused;
+                        Paused = true;
 
-                    Console.WriteLine("X: " + ((double)(pos.X - bounds.X) / bounds.Width).ToString("0.00") + " Y: " + ((double)(pos.Y - bounds.Y) / bounds.Height).ToString("0.00") + " W: " + bounds.Width + " H: " + bounds.Height);
+                        Device.Tap(verify);
+
+                        Routine.Wait(1, 2);
+                        Rectangle slider;
+                        while (!Device.Match("button.slider", out slider)) Routine.Wait(1, 2);
+
+                        Routine.Wait(1, 2);
+                        Device.Match("button.slider", out slider);
+
+                        int top = 0x75, left = 0xc9, right = 0x1b5, bottom = 0x105;
+
+                        int height = bottom - top;
+                        int width = right - left;
+
+                        using (Bitmap puzzle = Helper.Crop(Device.Screen, new Rectangle { X = left, Y = top, Width = width, Height = height }))
+                        {
+                            if (Helper.Solve(puzzle, out int offsetX))
+                            {
+                                Device.Swipe(slider, offsetX, Helper.RandomGenerator.Next(-5,6), Helper.RandomGenerator.Next(1000,1500));                                
+
+                                Routine.Wait(3, 5);
+
+                                if (Device.Match("button.slider", out slider))
+                                {
+                                    Device.Tap(10, 10);
+                                    Routine.Wait(1, 2);
+                                }
+                            }
+                            else
+                            {
+                                Device.Tap(10, 10);
+                                Routine.Wait(1, 2);
+                            }
+                        }
+                    }
+
+                    if (!paused) Paused = false;
+
+                    Thread.CurrentThread.Join(10000);
                 }
-                */
             }
-
+            catch(ThreadAbortException)
+            {
+            }
         }
 
         static bool Paused = false;
@@ -105,25 +150,40 @@ namespace RoKBot
             Console.WriteLine("Press Enter to start");
             Console.ReadLine();
 
-            Thread T = new Thread(new ThreadStart(Work));
+            Thread V = new Thread(new ThreadStart(RunVerification));
+
+            V.Start();
+                        
+            Thread T = new Thread(new ThreadStart(RunRoutine));
             T.Start();
 
-            while (true)
+            new Thread(new ThreadStart(() =>
             {
-                Console.ReadLine();
-                Paused = !Paused;
+                try
+                {
+                    while (true)
+                    {
+                        Console.ReadLine();
+                        Paused = !Paused;
 
-                if (Paused)
-                {
-                    T.Abort();
-                    Console.WriteLine("Press Enter to resume");
+                        if (Paused)
+                        {
+                            T.Abort();
+                            Console.WriteLine("Press Enter to resume");
+                        }
+                        else
+                        {
+                            T = new Thread(new ThreadStart(RunRoutine));
+                            T.Start();
+                        }
+                    }
                 }
-                else
+                catch (ThreadAbortException)
                 {
-                    T = new Thread(new ThreadStart(Work));
-                    T.Start();
                 }
-            }
+            })).Start();
+
+            while (true) Thread.CurrentThread.Join(1000);
         }
     }
 }
