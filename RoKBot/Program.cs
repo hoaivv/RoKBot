@@ -24,6 +24,9 @@ namespace RoKBot
             {
                 List<Func<bool>> tasks = new List<Func<bool>>(new Func<bool>[]{
 
+                Routine.DefeatBabarians,
+                Routine.UpgradeMainBuilding,
+                Routine.CollectResources,
                 Routine.GatherResources,
                 Routine.AllianceTasks,
                 Routine.ClaimCampaign,
@@ -36,7 +39,6 @@ namespace RoKBot
                 Routine.TrainCavalry,
                 Routine.TrainSiege,
                 Routine.ClaimQuests,
-                Routine.Build,
                 Routine.Build,
                 Routine.ClaimDaily
 
@@ -54,8 +56,7 @@ namespace RoKBot
                     while (!Routine.IsReady) Routine.Wait(1, 2);
 
                     Console.WriteLine();
-                    Console.WriteLine("Starting new routine");
-
+                    Console.WriteLine("Starting new routine");                    
 
                     Console.WriteLine("Running HealTroops");
                     Console.WriteLine();
@@ -88,14 +89,16 @@ namespace RoKBot
         {
             try
             {
-                bool paused = Paused;
+                bool restartRountine = false;
 
                 while (true)
                 {
-                    while (Device.Match("button.verify", out Rectangle verify, null, 0.95f))
+                    while (Device.Match("button.verify", out Rectangle verify, null))
                     {
-                        paused = Paused;
+                        if (!Paused) restartRountine = true;
                         Paused = true;
+
+                        Routine.Wait(1, 2);
 
                         Device.Tap(verify);
 
@@ -133,9 +136,23 @@ namespace RoKBot
                         }
                     }
 
-                    if (!paused) Paused = false;
+                    if (restartRountine) Paused = false;                   
+                    Routine.Wait(1, 2);
 
-                    Thread.CurrentThread.Join(10000);
+                    restartRountine = false;
+
+                    if (Device.Match("label.hint", out Rectangle hint, null, 1) || Device.Match("label.loss", out Rectangle loss, null, 1) || Device.Match("label.network", out Rectangle network, null, 1))
+                    {
+                        if (!Paused) restartRountine = true;
+                        Paused = true;
+
+                        Routine.Wait(1, 2);
+
+                        Device.Tap("button.confirm");
+                    }
+
+                    if (restartRountine) Paused = false;
+                    Routine.Wait(5, 6);
                 }
             }
             catch(ThreadAbortException)
@@ -149,13 +166,45 @@ namespace RoKBot
         {
             Console.WriteLine("Press Enter to start");
             Console.ReadLine();
-
-            Thread V = new Thread(new ThreadStart(RunVerification));
-
-            V.Start();
-                        
+            
+            Thread V = new Thread(new ThreadStart(RunVerification));                        
             Thread T = new Thread(new ThreadStart(RunRoutine));
+
+            bool last = Paused;
+
             T.Start();
+            V.Start();
+
+            new Thread(new ThreadStart(() =>
+            {
+                try
+                {
+                    while (true)
+                    {
+                        if (last != Paused)
+                        {
+                            if (Paused)
+                            {
+                                T.Abort();
+                                Console.WriteLine("Press Enter to resume");
+                            }
+                            else
+                            {
+                                T = new Thread(new ThreadStart(RunRoutine));
+                                T.Start();
+                            }
+
+                            last = Paused;
+                        }
+
+                        Thread.CurrentThread.Join(10);
+                    }
+                }
+                catch (ThreadAbortException)
+                {
+                }
+
+            })).Start();
 
             new Thread(new ThreadStart(() =>
             {
@@ -164,24 +213,14 @@ namespace RoKBot
                     while (true)
                     {
                         Console.ReadLine();
-                        Paused = !Paused;
-
-                        if (Paused)
-                        {
-                            T.Abort();
-                            Console.WriteLine("Press Enter to resume");
-                        }
-                        else
-                        {
-                            T = new Thread(new ThreadStart(RunRoutine));
-                            T.Start();
-                        }
+                        Paused = !Paused;                        
                     }
                 }
                 catch (ThreadAbortException)
                 {
                 }
-            })).Start();
+
+            })).Start();            
 
             while (true) Thread.CurrentThread.Join(1000);
         }

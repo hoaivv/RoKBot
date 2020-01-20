@@ -781,10 +781,32 @@ namespace RoKBot.Utils
                     Device.Tap(investigate);
                     Wait(2, 3);
 
-                    if (!Device.Match(0x26a, 0x79, "icon.investigate", out investigate)) Device.Tap(0x1f6, 0x91, "button.send");
-                    if (!Device.Match(0x26a, 0xb8, "icon.investigate", out investigate)) Device.Tap(0x1f6, 0xd0, "button.send");
-                    if (!Device.Match(0x26a, 0xfa, "icon.investigate", out investigate)) Device.Tap(0x1f6, 0x110, "button.send");
-                    Wait(1, 2);
+                    if (!Device.Match(0x26a, 0x79, "icon.investigate", out investigate, 0.8f))
+                    {
+                        Device.Tap(0x1f6, 0x91, "button.send");
+                        Wait(1, 2);
+                    }
+                    else
+                    {
+                        if (!Device.Match(0x26a, 0xb8, "icon.investigate", out investigate, 0.8f))
+                        {
+                            Device.Tap(0x1f6, 0xd0, "button.send");
+                            Wait(1, 2);
+                        }
+                        else
+                        {
+                            if (!Device.Match(0x26a, 0xfa, "icon.investigate", out investigate, 0.8f))
+                            {
+                                Device.Tap(0x1f6, 0x110, "button.send");
+                                Wait(1, 2);
+                            }  
+                            else
+                            {
+                                Device.Tap(0x141, 0xe8);
+                                Wait(1, 2);
+                            }
+                        }
+                    }
 
                     OpenCity();
 
@@ -859,7 +881,211 @@ namespace RoKBot.Utils
 
     partial class Routine
     {
-        public static bool Build()
+        public static bool UpgradeMainBuilding()
+        {
+            OpenCity();
+
+            Device.Tap(0x197, 0x2e);
+            Wait(1, 2);
+            Device.Tap(0x1fc, 0x143);
+            Wait(2, 3);
+
+            try
+            {
+                if (!Device.Tap("icon.upgrade"))
+                {
+                    while (Device.Match("button.go", out Rectangle go, null, 1))
+                    {
+                        Device.Tap(go);                        
+                        Wait(2, 3);
+                        if (!Device.Tap("icon.upgrade")) return false;
+                        Wait(2, 3);
+                    }
+
+                    Wait(2, 3);
+                    if (!Device.Tap(0x1eb, 0x14a, "button.upgrade"))
+                    {
+                        Device.Tap(0x21f, 0x64); // close
+                        return false;
+                    }
+
+                    Wait(2, 3);
+                    if (Device.Match("button.purchase", out Rectangle purchase) || Device.Match("button.getmore", out Rectangle getmore))
+                    {
+                        Device.Tap(0x1f6, 0x82); // close
+                        Wait(1, 2);
+                        Device.Tap(0x21f, 0x64); // close
+                        return false;
+                    }
+
+                    Wait(1, 2);
+                    Device.Tap(0x141, 0xdd);
+
+                    Console.WriteLine("Build");
+                    return true;
+                }
+                else
+                {
+                    Wait(2, 3);
+                    if (Device.Match("button.purchase", out Rectangle purchase) || Device.Match("button.getmore", out Rectangle getmore))
+                    {
+                        Device.Tap(0x1f6, 0x82); // close
+                        Wait(1, 2);
+                        Device.Tap(0x21f, 0x64); // close
+                        return false;
+                    }
+
+                    Wait(1, 2);
+                    Device.Tap(0x141, 0xdd);
+
+                    Console.WriteLine("Upgrade main building");
+                    return true;
+                }
+            }
+            finally
+            {
+                Wait(1, 2);
+                OpenMap();
+            }
+        }
+    }
+
+    partial class Routine
+    {
+        public static bool DefeatBabarians()
+        {
+            return DefeatBabariansOnce(true) && DefeatBabariansOnce(false) && DefeatBabariansOnce(false) && DefeatBabariansOnce(false);
+        }
+
+        public static bool DefeatBabariansOnce(bool first)
+        {
+            OpenMap();
+
+            Rectangle? search = null;
+
+            while (true)
+            {
+                if (!Device.Tap(0x1c, 0x186, "button.search")) // open gathering menu
+                    return false;
+
+                if (first)
+                {
+                    Wait(1, 2);
+                    Device.Tap(0x81, 0x1b4); // click babarians icon in menu
+                }
+
+                Wait(1, 2);
+
+                if (!Device.Match("label.search", out Rectangle match, search))
+                    return false;
+
+                search = match;
+
+                if (first)
+                {
+                    Device.Tap(0xba, 0x141); // max level;                
+                    Wait(0, 1);
+                    Device.Tap((Rectangle)search);
+                }
+
+                first = false;
+
+                Wait(0, 1);
+                while (Device.Match("label.search", out match, search))
+                {
+                    Device.Tap(0x45, 0x141); // minus
+                    Wait(0, 1);
+                    Device.Tap((Rectangle)search); // click search
+                    Wait(0, 1);
+                }
+
+                Wait(1, 2);
+                Device.Tap(0x13f, 0xf1); // click babarians in map
+
+                Wait(0, 1);
+                if (!Device.Tap("button.attack")) continue;
+
+                Wait(1, 2);
+
+                if (Device.Tap(0x1f5, 0x83, "action.troop"))
+                {
+                    Wait(2, 3);
+
+                    Device.Match(0x1ca, 0x16e, "action.march", out Rectangle org);
+                    Rectangle offset;
+
+                    Device.Tap(0x99, 0xef); // primary commander
+                    Wait(1, 2);
+                    Device.Tap(0x23, 0x9d);
+                    Wait(1, 2);
+
+                    Device.Match(0x1ca, 0x16e, "action.march", out offset);
+
+                    if (offset.X != org.X)
+                    {
+                        Device.Tap(0xcb, 0xef); // close
+                        Wait(1, 2);
+                    }
+
+                    Device.Tap(0xfc, 0xf7); // secondary commander
+                    Wait(1, 2);
+                    Device.Tap(0x23, 0x9d);
+                    Wait(1, 2);
+
+                    Device.Match(0x1ca, 0x16e, "action.march", out offset);
+
+                    if (offset.X != org.X)
+                    {
+                        Device.Tap(0x138, 0xf7); // close
+                        Wait(1, 2);
+                    }
+
+                    if (Device.Tap(0x153, 0x176, "button.max", 1))
+                    {
+                        Wait(1, 2);
+                    }
+
+                    if (!Device.Match(0x1cb, 0x15f, "label.cake", out Rectangle cake, 1))
+                    {
+                        Device.Tap(0x22c, 0x53); // close
+                        Wait(1, 2);
+                        continue;
+                    }
+
+                    if (Device.Tap(0x1ca, 0x16e, "action.march"))
+                    {
+                        Wait(1, 1);
+
+                        if (!Device.Match(0x1ca, 0x16e, "action.march", out match))
+                        {
+                            Console.WriteLine("Fight babarians");
+                            return true;
+                        }
+                        else
+                        {
+                            Device.Tap(0x22c, 0x53); // close
+                        }
+                    }
+                    else
+                    {
+                        Device.Tap(0x22c, 0x53); // close
+                    }
+                }
+                else
+                {
+                    Device.Tap(0x13f, 0xf1);
+                }
+
+                return false;
+            }
+        }
+    }
+
+    partial class Routine
+    {
+        public static bool Build() => BuildOnce() && BuildOnce();
+
+        public static bool BuildOnce()
         {
             OpenCity();
 
