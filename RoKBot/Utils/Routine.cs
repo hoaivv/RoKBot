@@ -12,9 +12,7 @@ namespace RoKBot.Utils
             Thread.CurrentThread.Join(Helper.RandomGenerator.Next(minSeconds * 1000, maxSeconds * 1000 + 1));
         }        
     }
-
-    
-
+   
     partial class Routine
     {
         public static bool IsReady => Device.Match(0x1e, 0x1bf, "button.city", out Rectangle match1) || Device.Match(0x1e, 0x1bf, "button.map", out Rectangle match2);
@@ -48,6 +46,128 @@ namespace RoKBot.Utils
                 OpenCity();
             }
             else
+            {
+                OpenMap();
+            }
+        }
+
+        private static bool UpgradeCurrentBuilding(string name)
+        {
+            if (Device.Tap("icon.upgrade"))
+            {
+                Wait(2, 3);
+                if (Device.Tap(0x1eb, 0x14a, "button.upgrade"))
+                {
+                    Wait(2, 3);
+
+                    if (Device.Match(0x13d, 0x66, "label.busy", out Rectangle busy))
+                    {
+                        Device.Tap(0x222, 0x65); // close
+                        Wait(1, 2);
+                        Device.Tap(0x21f, 0x64); // close
+                        Wait(1, 2);
+                        return false;
+                    }
+
+                    if (Device.Match("button.purchase", out Rectangle purchase) || Device.Match("button.getmore", out Rectangle getmore))
+                    {
+                        Device.Tap(0x1f6, 0x82); // close
+                        Wait(1, 2);
+                        Device.Tap(0x21f, 0x64); // close
+                        Wait(1, 2);
+                        return false;
+                    }
+
+                    Wait(1, 2);
+                    Device.Tap(0x141, 0xdd); // request help
+                    Console.WriteLine("Upgrading " + name);
+
+                    return true;
+
+                }
+                else
+                {
+                    Device.Tap(0x21f, 0x64); // close                    
+                    Wait(1, 2);
+                }
+            }
+
+            return false;
+        }
+
+    }
+
+    partial class Routine
+    {
+        public static bool Research()
+        {
+            /*
+            OpenCity();
+            Device.Tap(0x222, 0x84);
+            Wait(1, 2);
+            */
+            try
+            {
+                if (UpgradeCurrentBuilding("academy")) return true;
+
+                OpenMap();
+                OpenCity();
+                Device.Tap(0x222, 0x84);
+                Wait(1, 2);
+                
+
+                if (!Device.Tap("button.research")) return false;
+                Wait(1, 2);
+
+                if (Helper.RandomGenerator.Next(0, 2) > 0)
+                {
+                    Device.Tap(0x27, 0x96); // economy
+                }
+                else
+                {
+                    Device.Tap(0x27, 0xd2); // military
+                }
+
+                Wait(1, 2);
+                
+                while (!Device.Tap("icon.technology", 0.95f) && !Device.Match(0x22f, 0x191, "icon.corner.research", out Rectangle corner, 0.96f))
+                {
+                    Device.Swipe(0x221, 0x107, 0x67, 0x107, 1000);
+                    Wait(1, 2);
+                }
+
+                if (Device.Tap("icon.research"))
+                {
+                    if (Device.Match("button.getmore", out Rectangle getmore))
+                    {
+                        Device.Tap(0x1f7, 0x82); // close
+                        Wait(1, 2);
+                        Device.Tap(0x222, 0x67);
+                        Wait(1, 2);
+                        Device.Tap(0x22d, 0x5f);
+
+                        return false;
+                    }
+
+                    Wait(1, 2);
+                    Device.Tap(0x1c2, 0x83);
+                    Wait(0, 1);
+                    Device.Tap(0x22d, 0x5f);
+
+                    Console.WriteLine("Researching");
+                    return true;
+                }
+                else
+                {
+                    Device.Tap(0x222, 0x67);
+                    Wait(1, 2);
+                    Device.Tap(0x22d, 0x5f);
+
+                    return false;
+                }
+
+            }
+            finally
             {
                 OpenMap();
             }
@@ -386,39 +506,20 @@ namespace RoKBot.Utils
         public static bool TrainInfantry()
         {
             OpenCity();
-
             Device.Tap(0x13d, 0xb2); 
             Wait(1, 2);
 
-            if (Device.Tap("icon.upgrade"))
+            if (UpgradeCurrentBuilding("barracks"))
             {
-                Wait(2, 3);
-                if (Device.Tap(0x1eb, 0x14a, "button.upgrade"))
-                {
-                    Wait(2, 3);
-                    if (Device.Match("button.purchase", out Rectangle purchase) || Device.Match("button.getmore", out Rectangle getmore))
-                    {
-                        Device.Tap(0x1f6, 0x82); // close
-                        Wait(1, 2);
-                        Device.Tap(0x21f, 0x64); // close
-                        Wait(1, 2);
-                    }
-                    else
-                    {
-                        Wait(1, 2);
-                        Device.Tap(0x141, 0xdd); // request help
-                        Console.WriteLine("Upgrading barracks");
-
-                        OpenMap();
-
-                        return true;
-                    }
-                }
-                else
-                {
-                    Device.Tap(0x21f, 0x64); // close                    
-                    Wait(1, 2);
-                }                               
+                OpenMap();
+                return true;
+            }
+            else
+            {
+                OpenMap();
+                OpenCity();
+                Device.Tap(0x13d, 0xb2);
+                Wait(1, 2);
             }
 
             if (!Device.Tap("icon.infantry"))
@@ -440,35 +541,17 @@ namespace RoKBot.Utils
             Device.Tap(0x1a0, 0xf0); 
             Wait(1, 2);
 
-            if (Device.Tap("icon.upgrade"))
+            if (UpgradeCurrentBuilding("archery range"))
             {
-                Wait(2, 3);
-                if (Device.Tap(0x1eb, 0x14a, "button.upgrade"))
-                {
-                    Wait(2, 3);
-                    if (Device.Match("button.purchase", out Rectangle purchase) || Device.Match("button.getmore", out Rectangle getmore))
-                    {
-                        Device.Tap(0x1f6, 0x82); // close
-                        Wait(1, 2);
-                        Device.Tap(0x21f, 0x64); // close
-                        Wait(1, 2);
-                    }
-                    else
-                    {
-                        Wait(1, 2);
-                        Device.Tap(0x141, 0xdd); // request help
-                        Console.WriteLine("Upgrading archering range");
-
-                        OpenMap();
-
-                        return true;
-                    }
-                }
-                else
-                {
-                    Device.Tap(0x21f, 0x64); // close                    
-                    Wait(1, 2);
-                }
+                OpenMap();
+                return true;
+            }
+            else
+            {
+                OpenMap();
+                OpenCity();
+                Device.Tap(0x1a0, 0xf0);
+                Wait(1, 2);
             }
 
             if (!Device.Tap("icon.archer"))
@@ -490,35 +573,17 @@ namespace RoKBot.Utils
             Device.Tap(0x144, 0x136); 
             Wait(1, 2);
 
-            if (Device.Tap("icon.upgrade"))
+            if (UpgradeCurrentBuilding("stable"))
             {
-                Wait(2, 3);
-                if (Device.Tap(0x1eb, 0x14a, "button.upgrade"))
-                {
-                    Wait(2, 3);
-                    if (Device.Match("button.purchase", out Rectangle purchase) || Device.Match("button.getmore", out Rectangle getmore))
-                    {
-                        Device.Tap(0x1f6, 0x82); // close
-                        Wait(1, 2);
-                        Device.Tap(0x21f, 0x64); // close
-                        Wait(1, 2);
-                    }
-                    else
-                    {
-                        Wait(1, 2);
-                        Device.Tap(0x141, 0xdd); // request help
-                        Console.WriteLine("Upgrading stable");
-
-                        OpenMap();
-
-                        return true;
-                    }
-                }
-                else
-                {
-                    Device.Tap(0x21f, 0x64); // close                    
-                    Wait(1, 2);
-                }
+                OpenMap();
+                return true;
+            }
+            else
+            {
+                OpenMap();
+                OpenCity();
+                Device.Tap(0x144, 0x136);
+                Wait(1, 2);
             }
 
             if (!Device.Tap("icon.cavalry"))
@@ -540,35 +605,17 @@ namespace RoKBot.Utils
             Device.Tap(0xe7, 0xf2); 
             Wait(1, 2);
 
-            if (Device.Tap("icon.upgrade"))
+            if (UpgradeCurrentBuilding("siege workshop"))
             {
-                Wait(2, 3);
-                if (Device.Tap(0x1eb, 0x14a, "button.upgrade"))
-                {
-                    Wait(2, 3);
-                    if (Device.Match("button.purchase", out Rectangle purchase) || Device.Match("button.getmore", out Rectangle getmore))
-                    {
-                        Device.Tap(0x1f6, 0x82); // close
-                        Wait(1, 2);
-                        Device.Tap(0x21f, 0x64); // close
-                        Wait(1, 2);
-                    }
-                    else
-                    {
-                        Wait(1, 2);
-                        Device.Tap(0x141, 0xdd); // request help
-                        Console.WriteLine("Upgrade siege workshop");
-
-                        OpenMap();
-
-                        return true;
-                    }
-                }
-                else
-                {
-                    Device.Tap(0x21f, 0x64); // close                    
-                    Wait(1, 2);
-                }
+                OpenMap();
+                return true;
+            }
+            else
+            {
+                OpenMap();
+                OpenCity();
+                Device.Tap(0x144, 0x136);
+                Wait(1, 2);
             }
 
             if (!Device.Tap("icon.siege"))
@@ -1056,6 +1103,15 @@ namespace RoKBot.Utils
                     }
 
                     Wait(2, 3);
+
+                    if (Device.Match(0x13d, 0x66, "label.busy", out Rectangle busy))
+                    {
+                        Device.Tap(0x222, 0x65); // close
+                        Wait(1, 2);
+                        Device.Tap(0x21f, 0x64); // close
+                        return false;
+                    }
+                    
                     if (Device.Match("button.purchase", out Rectangle purchase) || Device.Match("button.getmore", out Rectangle getmore))
                     {
                         Device.Tap(0x1f6, 0x82); // close

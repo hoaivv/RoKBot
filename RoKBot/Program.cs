@@ -31,8 +31,9 @@ namespace RoKBot
                     Routine.TrainSiege,
                     Routine.ClaimQuests,
                     Routine.Build,
-                    Routine.ClaimDaily
-
+                    Routine.ClaimDaily,
+                    Routine.HealTroops,
+                    Routine.Research
                 });
 
                 Random random = new Random((int)(DateTime.UtcNow.Ticks % int.MaxValue));
@@ -47,11 +48,7 @@ namespace RoKBot
                     while (!Routine.IsReady) Routine.Wait(1, 2);
 
                     Console.WriteLine();
-                    Console.WriteLine("Starting new routine");                    
-
-                    Console.WriteLine("Running HealTroops");
-                    Console.WriteLine();
-                    Routine.HealTroops();
+                    Console.WriteLine("Starting new routine");
 
                     foreach (Func<bool> task in tasks.OrderBy(i => random.Next()))
                     {
@@ -62,11 +59,11 @@ namespace RoKBot
                         task();
                     }
 
-                    Console.WriteLine("Running SwitchAccount");
                     Console.WriteLine();
-                    Routine.SwitchAccount();
+                    Console.WriteLine("Running SwitchAccount");                    
 
-                    Routine.Wait(10, 20);
+                    Routine.SwitchAccount();
+                    Routine.Wait(10, 15);
                 }
 
             }
