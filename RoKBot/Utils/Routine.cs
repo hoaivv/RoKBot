@@ -171,7 +171,13 @@ namespace RoKBot.Utils
 
             Wait(1, 2);
 
-            if (!Device.Match("label.search", out Rectangle search)) return false;
+            if (!Device.Match("label.search", out Rectangle search) || search.X < 0x9c || search.X + search.Width > 0x114)
+            {
+                Device.Tap(0x13f, 0xf1);
+                Wait(1, 2);
+
+                return false;
+            }
 
             Device.Tap(0x114, 0x141, 0); // max level;
 
@@ -206,7 +212,13 @@ namespace RoKBot.Utils
 
             Wait(1, 2);
 
-            if (!Device.Match("label.search", out Rectangle search)) return false;
+            if (!Device.Match("label.search", out Rectangle search) || search.X < 0xfc || search.X + search.Width > 0x174)
+            {
+                Device.Tap(0x13f, 0xf1);
+                Wait(1, 2);
+
+                return false;
+            }
 
             Device.Tap(0x174, 0x141, 0); // max level;
 
@@ -241,7 +253,13 @@ namespace RoKBot.Utils
 
             Wait(1, 2);
 
-            if (!Device.Match("label.search", out Rectangle search)) return false;
+            if (!Device.Match("label.search", out Rectangle search) || search.X < 0x15b || search.X + search.Width > 0x1d3)
+            {
+                Device.Tap(0x13f, 0xf1);
+                Wait(1, 2);
+
+                return false;
+            }
 
             Device.Tap(0x1d3, 0x141, 0); // max level;
 
@@ -276,7 +294,13 @@ namespace RoKBot.Utils
 
             Wait(1, 2);
 
-            if (!Device.Match("label.search", out Rectangle search)) return false;
+            if (!Device.Match("label.search", out Rectangle search) || search.X < 0x1b9 || search.X + search.Width > 0x231)
+            {
+                Device.Tap(0x13f, 0xf1);
+                Wait(1, 2);
+
+                return false;
+            }
 
             Device.Tap(0x231, 0x141); // max level;
 
@@ -366,6 +390,37 @@ namespace RoKBot.Utils
             Device.Tap(0x13d, 0xb2); 
             Wait(1, 2);
 
+            if (Device.Tap("icon.upgrade"))
+            {
+                Wait(2, 3);
+                if (Device.Tap(0x1eb, 0x14a, "button.upgrade"))
+                {
+                    Wait(2, 3);
+                    if (Device.Match("button.purchase", out Rectangle purchase) || Device.Match("button.getmore", out Rectangle getmore))
+                    {
+                        Device.Tap(0x1f6, 0x82); // close
+                        Wait(1, 2);
+                        Device.Tap(0x21f, 0x64); // close
+                        Wait(1, 2);
+                    }
+                    else
+                    {
+                        Wait(1, 2);
+                        Device.Tap(0x141, 0xdd); // request help
+                        Console.WriteLine("Upgrading barracks");
+
+                        OpenMap();
+
+                        return true;
+                    }
+                }
+                else
+                {
+                    Device.Tap(0x21f, 0x64); // close                    
+                    Wait(1, 2);
+                }                               
+            }
+
             if (!Device.Tap("icon.infantry"))
             {
                 Device.Tap(0x13d, 0xb2);
@@ -385,6 +440,37 @@ namespace RoKBot.Utils
             Device.Tap(0x1a0, 0xf0); 
             Wait(1, 2);
 
+            if (Device.Tap("icon.upgrade"))
+            {
+                Wait(2, 3);
+                if (Device.Tap(0x1eb, 0x14a, "button.upgrade"))
+                {
+                    Wait(2, 3);
+                    if (Device.Match("button.purchase", out Rectangle purchase) || Device.Match("button.getmore", out Rectangle getmore))
+                    {
+                        Device.Tap(0x1f6, 0x82); // close
+                        Wait(1, 2);
+                        Device.Tap(0x21f, 0x64); // close
+                        Wait(1, 2);
+                    }
+                    else
+                    {
+                        Wait(1, 2);
+                        Device.Tap(0x141, 0xdd); // request help
+                        Console.WriteLine("Upgrading archering range");
+
+                        OpenMap();
+
+                        return true;
+                    }
+                }
+                else
+                {
+                    Device.Tap(0x21f, 0x64); // close                    
+                    Wait(1, 2);
+                }
+            }
+
             if (!Device.Tap("icon.archer"))
             {
                 Device.Tap(0x1a0, 0xf0);
@@ -403,7 +489,37 @@ namespace RoKBot.Utils
 
             Device.Tap(0x144, 0x136); 
             Wait(1, 2);
-            
+
+            if (Device.Tap("icon.upgrade"))
+            {
+                Wait(2, 3);
+                if (Device.Tap(0x1eb, 0x14a, "button.upgrade"))
+                {
+                    Wait(2, 3);
+                    if (Device.Match("button.purchase", out Rectangle purchase) || Device.Match("button.getmore", out Rectangle getmore))
+                    {
+                        Device.Tap(0x1f6, 0x82); // close
+                        Wait(1, 2);
+                        Device.Tap(0x21f, 0x64); // close
+                        Wait(1, 2);
+                    }
+                    else
+                    {
+                        Wait(1, 2);
+                        Device.Tap(0x141, 0xdd); // request help
+                        Console.WriteLine("Upgrading stable");
+
+                        OpenMap();
+
+                        return true;
+                    }
+                }
+                else
+                {
+                    Device.Tap(0x21f, 0x64); // close                    
+                    Wait(1, 2);
+                }
+            }
 
             if (!Device.Tap("icon.cavalry"))
             {
@@ -423,7 +539,37 @@ namespace RoKBot.Utils
 
             Device.Tap(0xe7, 0xf2); 
             Wait(1, 2);
-            
+
+            if (Device.Tap("icon.upgrade"))
+            {
+                Wait(2, 3);
+                if (Device.Tap(0x1eb, 0x14a, "button.upgrade"))
+                {
+                    Wait(2, 3);
+                    if (Device.Match("button.purchase", out Rectangle purchase) || Device.Match("button.getmore", out Rectangle getmore))
+                    {
+                        Device.Tap(0x1f6, 0x82); // close
+                        Wait(1, 2);
+                        Device.Tap(0x21f, 0x64); // close
+                        Wait(1, 2);
+                    }
+                    else
+                    {
+                        Wait(1, 2);
+                        Device.Tap(0x141, 0xdd); // request help
+                        Console.WriteLine("Upgrade siege workshop");
+
+                        OpenMap();
+
+                        return true;
+                    }
+                }
+                else
+                {
+                    Device.Tap(0x21f, 0x64); // close                    
+                    Wait(1, 2);
+                }
+            }
 
             if (!Device.Tap("icon.siege"))
             {
@@ -881,7 +1027,7 @@ namespace RoKBot.Utils
 
     partial class Routine
     {
-        public static bool UpgradeMainBuilding()
+        public static bool UpgradeCity()
         {
             OpenCity();
 
@@ -894,7 +1040,7 @@ namespace RoKBot.Utils
             {
                 if (!Device.Tap("icon.upgrade"))
                 {
-                    while (Device.Match("button.go", out Rectangle go, null, 1))
+                    while (Device.Match("button.go", out Rectangle go, null, 0.95f))
                     {
                         Device.Tap(go);                        
                         Wait(2, 3);
@@ -1045,7 +1191,7 @@ namespace RoKBot.Utils
                         Wait(1, 2);
                     }
 
-                    if (!Device.Match(0x1cb, 0x15f, "label.cake", out Rectangle cake, 1))
+                    if (!Device.Match(0x1cb, 0x15f, "label.cake", out Rectangle cake, 0.95f))
                     {
                         Device.Tap(0x22c, 0x53); // close
                         Wait(1, 2);

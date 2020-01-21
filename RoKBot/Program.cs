@@ -1,18 +1,9 @@
 ﻿using RoKBot.Utils;
-using SharpAdbClient;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.IO;
 using System.Linq;
-using System.Net;
 using System.Threading;
-using System.Threading.Tasks;
-using AForge.Imaging.Filters;
-using AForge.Imaging;
-using System.Drawing.Imaging;
-using AForge;
-using System.Runtime.InteropServices;
 
 namespace RoKBot
 {
@@ -24,25 +15,25 @@ namespace RoKBot
             {
                 List<Func<bool>> tasks = new List<Func<bool>>(new Func<bool>[]{
 
-                Routine.DefeatBabarians,
-                Routine.UpgradeMainBuilding,
-                Routine.CollectResources,
-                Routine.GatherResources,
-                Routine.AllianceTasks,
-                Routine.ClaimCampaign,
-                Routine.ReadMails,
-                Routine.ClaimVIP,
-                Routine.Recruit,
-                Routine.Explore,
-                Routine.TrainInfantry,
-                Routine.TrainArcher,
-                Routine.TrainCavalry,
-                Routine.TrainSiege,
-                Routine.ClaimQuests,
-                Routine.Build,
-                Routine.ClaimDaily
+                    Routine.DefeatBabarians,
+                    Routine.UpgradeCity,
+                    Routine.CollectResources,
+                    Routine.GatherResources,
+                    Routine.AllianceTasks,
+                    Routine.ClaimCampaign,
+                    Routine.ReadMails,
+                    Routine.ClaimVIP,
+                    Routine.Recruit,
+                    Routine.Explore,
+                    Routine.TrainInfantry,
+                    Routine.TrainArcher,
+                    Routine.TrainCavalry,
+                    Routine.TrainSiege,
+                    Routine.ClaimQuests,
+                    Routine.Build,
+                    Routine.ClaimDaily
 
-            });
+                });
 
                 Random random = new Random((int)(DateTime.UtcNow.Ticks % int.MaxValue));
 
