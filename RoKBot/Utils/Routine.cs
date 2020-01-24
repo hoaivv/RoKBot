@@ -99,43 +99,43 @@ namespace RoKBot.Utils
 
     partial class Routine
     {
-        public static bool Research()
+        public static bool UpgradeAcademy()
         {
-            
-            OpenCity();
-            Device.Tap(0x222, 0x84);
-            Wait(1, 2);
-            
             try
             {
-                if (UpgradeCurrentBuilding("academy")) return true;
-
-                OpenMap();
                 OpenCity();
                 Device.Tap(0x222, 0x84);
                 Wait(1, 2);
-                
+
+                return UpgradeCurrentBuilding("academy");
+            }
+            finally
+            {
+                OpenMap();
+            }
+        }
+
+        public static bool ResearchMilitary()
+        {            
+            try
+            {                
+                OpenCity();
+                Device.Tap(0x222, 0x84);
+                Wait(1, 2);
 
                 if (!Device.Tap("button.research")) return false;
                 Wait(1, 2);
 
-                if (Helper.RandomGenerator.Next(0, 2) > 0)
-                {
-                    Device.Tap(0x27, 0x96); // economy
-                }
-                else
-                {
-                    Device.Tap(0x27, 0xd2); // military
-                }
-
+                Device.Tap(0x27, 0xd2); // military
                 Wait(1, 2);
-                
+
                 while (!Device.Tap("icon.technology", 0.95f) && !Device.Match(0x22f, 0x191, "icon.corner.research", out Rectangle corner, 0.96f))
                 {
                     Device.Swipe(0x221, 0x107, 0x67, 0x107, 1000);
                     Wait(1, 2);
                 }
 
+                Wait(1, 2);
                 if (Device.Tap("icon.research"))
                 {
                     if (Device.Match("button.getmore", out Rectangle getmore))
@@ -154,7 +154,7 @@ namespace RoKBot.Utils
                     Wait(0, 1);
                     Device.Tap(0x22d, 0x5f);
 
-                    Console.WriteLine("Researching");
+                    Console.WriteLine("Researching military");
                     return true;
                 }
                 else
@@ -171,6 +171,72 @@ namespace RoKBot.Utils
             {
                 OpenMap();
             }
+
+        }
+        public static bool ResearchEconomy()
+        {                      
+            try
+            {
+                OpenCity();
+                Device.Tap(0x222, 0x84);
+                Wait(1, 2);
+                
+                if (!Device.Tap("button.research")) return false;
+                Wait(1, 2);
+
+                Device.Tap(0x27, 0x96); // economy
+
+                Wait(1, 2);
+                
+                while (!Device.Tap("icon.technology", 0.95f) && !Device.Match(0x22f, 0x191, "icon.corner.research", out Rectangle corner, 0.96f))
+                {
+                    Device.Swipe(0x221, 0x107, 0x67, 0x107, 1000);
+                    Wait(1, 2);
+                }
+
+                Wait(1, 2);
+                if (Device.Tap("icon.research"))
+                {
+                    if (Device.Match("button.getmore", out Rectangle getmore))
+                    {
+                        Device.Tap(0x1f7, 0x82); // close
+                        Wait(1, 2);
+                        Device.Tap(0x222, 0x67);
+                        Wait(1, 2);
+                        Device.Tap(0x22d, 0x5f);
+
+                        return false;
+                    }
+
+                    Wait(1, 2);
+                    Device.Tap(0x1c2, 0x83);
+                    Wait(0, 1);
+                    Device.Tap(0x22d, 0x5f);
+
+                    Console.WriteLine("Researching economy");
+                    return true;
+                }
+                else
+                {
+                    Device.Tap(0x222, 0x67);
+                    Wait(1, 2);
+                    Device.Tap(0x22d, 0x5f);
+
+                    return false;
+                }
+
+            }
+            finally
+            {
+                OpenMap();
+            }
+        }
+
+        public static bool Research()
+        {
+            if (UpgradeAcademy()) return true;
+
+            return ResearchEconomy() || ResearchMilitary();
         }
     }
 
