@@ -15,33 +15,37 @@ namespace RoKBot
             {
                 List<Func<bool>> tasks = new List<Func<bool>>(new Func<bool>[]{
 
-                    Routine.DefeatBabarians,
-                    Routine.UpgradeCity,
-                    Routine.CollectResources,
-                    Routine.GatherResources,
-                    Routine.AllianceTasks,
-                    Routine.ClaimCampaign,
-                    Routine.ReadMails,
-                    Routine.ClaimVIP,
-                    Routine.Recruit,
-                    Routine.Explore,
-                    Routine.TrainInfantry,
-                    Routine.TrainArcher,
-                    Routine.TrainCavalry,
-                    Routine.TrainSiege,
-                    Routine.ClaimQuests,
-                    Routine.Build,
-                    Routine.ClaimDaily,
-                    Routine.HealTroops,
+                    //Routine.DefeatBabarians,
+                    //Routine.UpgradeCity,
+                    //Routine.CollectResources,
+                    //Routine.GatherResources,
+                    //Routine.AllianceTasks,
+                    //Routine.ClaimCampaign,
+                    //Routine.ReadMails,
+                    //Routine.ClaimVIP,
+                    //Routine.Recruit,
+                    //Routine.Explore,
+                    //Routine.TrainInfantry,
+                    //Routine.TrainArcher,
+                    //Routine.TrainCavalry,
+                    //Routine.TrainSiege,
+                    //Routine.ClaimQuests,
+                    //Routine.Build,
+                    //Routine.ClaimDaily,
+                    //Routine.HealTroops,
                     Routine.Research
                 });
 
                 Random random = new Random((int)(DateTime.UtcNow.Ticks % int.MaxValue));
 
-                Console.WriteLine();
-                Console.WriteLine("Starting ROK");
+                //Console.WriteLine();
+                //Console.WriteLine("Starting ROK");
 
-                Device.Run("com.lilithgame.roc.gp", "com.harry.engine.MainActivity");
+                //Device.Run("com.lilithgame.roc.gp", "com.harry.engine.MainActivity");
+
+                Thread.CurrentThread.Join(1000);
+
+                Routine.Initialise();
 
                 while (true)
                 {                    
