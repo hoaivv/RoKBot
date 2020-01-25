@@ -15,24 +15,24 @@ namespace RoKBot
             {
                 List<Func<bool>> tasks = new List<Func<bool>>(new Func<bool>[]{
 
-                    Routine.DefeatBabarians,
-                    Routine.UpgradeCity,
-                    Routine.CollectResources,
-                    Routine.GatherResources,
-                    Routine.AllianceTasks,
-                    Routine.ClaimCampaign,
-                    Routine.ReadMails,
-                    Routine.ClaimVIP,
-                    Routine.Recruit,
-                    Routine.Explore,
-                    Routine.TrainInfantry,
-                    Routine.TrainArcher,
-                    Routine.TrainCavalry,
-                    Routine.TrainSiege,
-                    Routine.ClaimQuests,
-                    Routine.Build,
-                    Routine.ClaimDaily,
-                    Routine.HealTroops,
+                    //Routine.DefeatBabarians,
+                    //Routine.UpgradeCity,
+                    //Routine.CollectResources,
+                    //Routine.GatherResources,
+                    //Routine.AllianceTasks,
+                    //Routine.ClaimCampaign,
+                    //Routine.ReadMails,
+                    //Routine.ClaimVIP,
+                    //Routine.Recruit,
+                    //Routine.Explore,
+                    //Routine.TrainInfantry,
+                    //Routine.TrainArcher,
+                    //Routine.TrainCavalry,
+                    //Routine.TrainSiege,
+                    //Routine.ClaimQuests,
+                    //Routine.Build,
+                    //Routine.ClaimDaily,
+                    //Routine.HealTroops,
                     Routine.Research
                 });
 
@@ -45,6 +45,10 @@ namespace RoKBot
 
                 Thread.CurrentThread.Join(1000);
 
+                Console.WriteLine();
+                Console.ForegroundColor = ConsoleColor.White;
+                Console.WriteLine("Initializing");
+                Console.ForegroundColor = ConsoleColor.Gray;
                 Routine.Initialise();
 
                 while (true)
@@ -52,28 +56,36 @@ namespace RoKBot
                     while (!Routine.IsReady) Routine.Wait(1, 2);
 
                     Console.WriteLine();
-                    Console.WriteLine("Starting new routine");
+                    Console.ForegroundColor = ConsoleColor.White;
+                    Console.WriteLine("Starting new routine");                    
 
                     foreach (Func<bool> task in tasks.OrderBy(i => random.Next()))
                     {
                         if (random.Next(0, 101) < 30 && task != Routine.GatherResources) continue;
 
                         Console.WriteLine();
+                        Console.ForegroundColor = ConsoleColor.White;
                         Console.WriteLine("Running " + task.Method.Name);
+                        Console.ForegroundColor = ConsoleColor.Gray;
                         task();
                     }
 
                     Console.WriteLine();
-                    Console.WriteLine("Running SwitchAccount");                    
-
-                    Routine.SwitchAccount();
+                    Console.ForegroundColor = ConsoleColor.White;
+                    Console.WriteLine("Running SwitchCharacter");
+                    Console.ForegroundColor = ConsoleColor.Gray;
+                    Routine.SwitchCharacter();
                     Routine.Wait(10, 15);
                 }
 
             }
             catch(ThreadAbortException)
             {
+                Console.WriteLine();
+                Console.ForegroundColor = ConsoleColor.White;
                 Console.WriteLine("All tasks stopped");
+                Console.ForegroundColor = ConsoleColor.Gray;
+                Console.WriteLine("Press Enter to resume");
             }
         }
 
@@ -96,6 +108,9 @@ namespace RoKBot
 
                         Routine.Wait(1, 2);
                         Rectangle slider;
+
+                        DateTime start = DateTime.UtcNow;
+
                         while (!Device.Match("button.slider", out slider)) Routine.Wait(1, 2);
 
                         Routine.Wait(1, 2);
@@ -156,9 +171,12 @@ namespace RoKBot
 
         static void Main(string[] args)
         {
+            Console.ForegroundColor = ConsoleColor.White;
             Console.WriteLine("Press Enter to start");
             Console.ReadLine();
-            
+            Console.ForegroundColor = ConsoleColor.Gray;
+            Console.WriteLine("Starting threads");
+
             Thread V = new Thread(new ThreadStart(RunVerification));                        
             Thread T = new Thread(new ThreadStart(RunRoutine));
 
@@ -177,8 +195,7 @@ namespace RoKBot
                         {
                             if (Paused)
                             {
-                                T.Abort();
-                                Console.WriteLine("Press Enter to resume");
+                                T.Abort();                                
                             }
                             else
                             {

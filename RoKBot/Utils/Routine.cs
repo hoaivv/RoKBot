@@ -99,144 +99,103 @@ namespace RoKBot.Utils
 
     partial class Routine
     {
-        public static bool UpgradeAcademy()
-        {
-            try
-            {
-                OpenCity();
-                Device.Tap(0x222, 0x84);
-                Wait(1, 2);
-
-                return UpgradeCurrentBuilding("academy");
-            }
-            finally
-            {
-                OpenMap();
-            }
-        }
-
-        public static bool ResearchMilitary()
-        {            
-            try
-            {                
-                OpenCity();
-                Device.Tap(0x222, 0x84);
-                Wait(1, 2);
-
-                if (!Device.Tap("button.research")) return false;
-                Wait(1, 2);
-
-                Device.Tap(0x27, 0xd2); // military
-                Wait(1, 2);
-
-                while (!Device.Tap("icon.technology", 0.95f) && !Device.Match(0x22f, 0x191, "icon.corner.research", out Rectangle corner, 0.96f))
-                {
-                    Device.Swipe(0x221, 0x107, 0x67, 0x107, 1000);
-                    Wait(1, 2);
-                }
-
-                Wait(1, 2);
-                if (Device.Tap("icon.research"))
-                {
-                    if (Device.Match("button.getmore", out Rectangle getmore))
-                    {
-                        Device.Tap(0x1f7, 0x82); // close
-                        Wait(1, 2);
-                        Device.Tap(0x222, 0x67);
-                        Wait(1, 2);
-                        Device.Tap(0x22d, 0x5f);
-
-                        return false;
-                    }
-
-                    Wait(1, 2);
-                    Device.Tap(0x1c2, 0x83);
-                    Wait(0, 1);
-                    Device.Tap(0x22d, 0x5f);
-
-                    Console.WriteLine("Researching military");
-                    return true;
-                }
-                else
-                {
-                    Device.Tap(0x222, 0x67);
-                    Wait(1, 2);
-                    Device.Tap(0x22d, 0x5f);
-
-                    return false;
-                }
-
-            }
-            finally
-            {
-                OpenMap();
-            }
-
-        }
-        public static bool ResearchEconomy()
-        {                      
-            try
-            {
-                OpenCity();
-                Device.Tap(0x222, 0x84);
-                Wait(1, 2);
-                
-                if (!Device.Tap("button.research")) return false;
-                Wait(1, 2);
-
-                Device.Tap(0x27, 0x96); // economy
-
-                Wait(1, 2);
-                
-                while (!Device.Tap("icon.technology", 0.95f) && !Device.Match(0x22f, 0x191, "icon.corner.research", out Rectangle corner, 0.96f))
-                {
-                    Device.Swipe(0x221, 0x107, 0x67, 0x107, 1000);
-                    Wait(1, 2);
-                }
-
-                Wait(1, 2);
-                if (Device.Tap("icon.research"))
-                {
-                    if (Device.Match("button.getmore", out Rectangle getmore))
-                    {
-                        Device.Tap(0x1f7, 0x82); // close
-                        Wait(1, 2);
-                        Device.Tap(0x222, 0x67);
-                        Wait(1, 2);
-                        Device.Tap(0x22d, 0x5f);
-
-                        return false;
-                    }
-
-                    Wait(1, 2);
-                    Device.Tap(0x1c2, 0x83);
-                    Wait(0, 1);
-                    Device.Tap(0x22d, 0x5f);
-
-                    Console.WriteLine("Researching economy");
-                    return true;
-                }
-                else
-                {
-                    Device.Tap(0x222, 0x67);
-                    Wait(1, 2);
-                    Device.Tap(0x22d, 0x5f);
-
-                    return false;
-                }
-
-            }
-            finally
-            {
-                OpenMap();
-            }
-        }
-
         public static bool Research()
         {
-            if (UpgradeAcademy()) return true;
+            try
+            {
+                OpenCity();
+                Device.Tap(0x222, 0x84);
+                Wait(1, 2);
 
-            return ResearchEconomy() || ResearchMilitary();
+                if (Device.Match("icon.speedup", out Rectangle speedup)) return false;
+
+                if (!Device.Match("button.research", out Rectangle research))
+                {
+                    OpenMap();
+                    OpenCity();
+
+                    Device.Tap(0x222, 0x84);
+                    Wait(1, 2);
+
+                    if (!Device.Match("button.research", out research)) return false;
+                }
+
+                if (UpgradeCurrentBuilding("academy")) return true;
+
+                OpenMap();
+                OpenCity();
+
+                Device.Tap(0x222, 0x84);
+                Wait(1, 2);
+
+                Device.Tap(research);
+                Wait(1, 2);                
+
+                if (Helper.RandomGenerator.Next(0, 2) > 0)
+                {
+                    Device.Tap(0x27, 0x96); //economy
+                }
+                else
+                {
+                    Device.Tap(0x27, 0xd2); //military
+                }
+
+                Wait(1, 2);
+
+                Rectangle technology;
+                while (!Device.Match("icon.technology", out technology, null, 0.95f) && !Device.Match(0x22f, 0x191, "icon.corner.research", out Rectangle corner, 0.96f))
+                {
+                    Device.Swipe(0x221, 0x107, 0x67, 0x107, 1000);
+                    Wait(1, 2);
+                }
+
+                if (!Device.Match("icon.technology", out technology, technology, 0.95f))
+                {
+                    Wait(0, 1);
+                    Device.Tap(0x22d, 0x5f); // close
+
+                    return false;
+                }
+                else
+                {
+                    Device.Tap(technology);
+
+                    Wait(1, 2);
+                    if (Device.Tap("icon.research"))
+                    {
+                        if (Device.Match("button.getmore", out Rectangle getmore))
+                        {
+                            Device.Tap(0x1f7, 0x82); // close getmore
+                            Wait(1, 2);
+                            Device.Tap(0x222, 0x67); // close technology popup
+                            Wait(1, 2);
+                            Device.Tap(0x22d, 0x5f); // close
+
+                            return false;
+                        }
+
+                        Wait(1, 2);
+                        Device.Tap(0x1c2, 0x83); // request help
+                        Wait(0, 1);
+                        Device.Tap(0x22d, 0x5f); // close
+
+                        Console.WriteLine("Researching");
+                        return true;
+                    }
+                    else
+                    {
+                        Device.Tap(0x222, 0x67); // close technology popup
+                        Wait(1, 2);
+                        Device.Tap(0x22d, 0x5f); // close
+
+                        return false;
+                    }
+                }
+            }
+            finally
+            {
+                OpenMap();
+            }
         }
     }
 
@@ -1510,6 +1469,7 @@ namespace RoKBot.Utils
     {
         private class AccountData
         {
+            public int Index { get; set; }
             public Point Position { get; set; }
             public Queue<string> GatheringOrder { get; private set; } = new Queue<string>(new string[] { "F", "W", "S", "G" });
             public int BarbarianLevel = 0;
@@ -1524,6 +1484,8 @@ namespace RoKBot.Utils
             {
                 while (!IsReady) Wait(1, 2);
 
+                Console.WriteLine("Detecting characters");
+
                 Device.Tap(0x15, 0x15); // open profile
                 Wait(2, 3);
                 Device.Tap(0x1eb, 0x143); // open settings
@@ -1536,10 +1498,13 @@ namespace RoKBot.Utils
 
                 Accounts.Clear();
 
+                int index = 0;
+
                 while (Device.Match(x, y, "bg.account", out Rectangle match))
                 {
                     Accounts.Enqueue(new AccountData
                     {
+                        Index = ++index,
                         Position = new Point { X = x, Y = y }
                     });
 
@@ -1555,8 +1520,6 @@ namespace RoKBot.Utils
                 }
 
                 Console.WriteLine("Detected " + Accounts.Count + " characters");
-
-                int index = 0;
 
                 while (Current == null)
                 {
@@ -1575,11 +1538,10 @@ namespace RoKBot.Utils
                         Wait(1, 2);
                     }
 
-                    index++;
                     Accounts.Enqueue(test);
                 }
 
-                Console.WriteLine("Current character: #" + index);
+                Console.WriteLine("Current character: #" + Current.Index);
 
                 Wait(2, 3);
                 Device.Tap(0x221, 0x65); // close account management
@@ -1588,9 +1550,13 @@ namespace RoKBot.Utils
                 Wait(2, 3);
                 Device.Tap(0x21d, 0x65); // close profile
             }
+            else
+            {
+                Console.WriteLine("Initialized, resume with character #" + Current.Index);
+            }
         }
 
-        public static bool SwitchAccount()
+        public static bool SwitchCharacter()
         {            
             if (Accounts.Count > 1)
             {
@@ -1615,7 +1581,7 @@ namespace RoKBot.Utils
 
                     if (Device.Tap(0x197, 0x13c, "button.yes"))
                     {
-                        Console.WriteLine("Account switched");
+                        Console.WriteLine("Switched to character #" + test.Index);
                         Wait(20, 25);
 
                         while (!IsReady) Wait(2, 3);

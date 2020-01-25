@@ -30,13 +30,21 @@ namespace RoKBot.Utils
         
         public static bool Match(Bitmap template, Bitmap source, out Rectangle match, Rectangle? searchZone = null, float threshold = 0.9f)
         {
-            Rectangle[] results = searchZone == null
-                ? new ExhaustiveTemplateMatching(threshold).ProcessImage(source, template).OrderByDescending(i => i.Similarity).Select(i => i.Rectangle).ToArray()
-                : new ExhaustiveTemplateMatching(threshold).ProcessImage(source, template, (Rectangle)searchZone).OrderByDescending(i => i.Similarity).Select(i => i.Rectangle).ToArray();
+            try
+            {
+                Rectangle[] results = searchZone == null
+                    ? new ExhaustiveTemplateMatching(threshold).ProcessImage(source, template).OrderByDescending(i => i.Similarity).Select(i => i.Rectangle).ToArray()
+                    : new ExhaustiveTemplateMatching(threshold).ProcessImage(source, template, (Rectangle)searchZone).OrderByDescending(i => i.Similarity).Select(i => i.Rectangle).ToArray();
 
-            match = results.Length > 0 ? results[0] : default(Rectangle);
+                match = results.Length > 0 ? results[0] : default(Rectangle);
 
-            return results.Length > 0;
+                return results.Length > 0;
+            }
+            catch(Exception)
+            {
+                match = default(Rectangle);
+                return false;
+            }
         }
 
         public static Bitmap Crop(Bitmap image, Rectangle bounds)
