@@ -1585,10 +1585,9 @@ namespace RoKBot.Utils
 
                     if (Device.Tap(0x197, 0x13c, "button.yes"))
                     {
+                        Current = test;
                         Console.WriteLine("Switched to character #" + test.Index);
                         Wait(20, 25);
-
-                        Current = test;
 
                         while (!IsReady) Wait(2, 3);                        
 
