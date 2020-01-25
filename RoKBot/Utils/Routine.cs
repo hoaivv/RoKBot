@@ -1036,8 +1036,12 @@ namespace RoKBot.Utils
                 {
                     Device.Tap(0xb2 + i * 83, 0x9e); // click chests
                     Wait(2, 3);
-                    Device.Tap(0xb2 + i * 83, 0x9e); // click chests
-                    Wait(2, 3);
+
+                    if (i == 4)
+                    {
+                        Device.Tap(0xb2 + i * 83, 0x9e); // click chests
+                        Wait(2, 3);
+                    }
                 }
 
                 Device.Tap(0x222, 0x67); // close button of quest menu
@@ -1584,9 +1588,9 @@ namespace RoKBot.Utils
                         Console.WriteLine("Switched to character #" + test.Index);
                         Wait(20, 25);
 
-                        while (!IsReady) Wait(2, 3);
-
                         Current = test;
+
+                        while (!IsReady) Wait(2, 3);                        
 
                         return true;
                     }                    
