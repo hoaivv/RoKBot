@@ -1383,6 +1383,7 @@ namespace RoKBot.Utils
                     {
                         Device.Tap(0x22c, 0x53); // close
                         Wait(1, 2);
+                        Current.BarbarianLevel++;
                         continue;
                     }
 
