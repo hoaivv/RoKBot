@@ -1286,44 +1286,48 @@ namespace RoKBot.Utils
                     return false;
 
                 Wait(1, 2);
-                Device.Tap(0x81, 0x1b4); // click babarians icon in menu
 
-                Wait(1, 2);
+                if (first)
+                {                    
+                    Device.Tap(0x81, 0x1b4); // click babarians icon in menu
+                    Wait(1, 2);
+                }
 
                 if (!Device.Match("label.search", out Rectangle match, search))
                     return false;
 
                 search = match;
 
-                Device.Tap(0xba, 0x141); // max level;                
-                Wait(0, 1);
-
                 if (first)
                 {
+                    Device.Tap(0xba, 0x141); // max level;                
+                    Wait(0, 1);
+
                     for (int i = 0; i > Current.BarbarianLevel; i--)
                     {
                         Device.Tap(0x45, 0x141); // minus
                         Wait(0, 1);
                     }
+                    
+                    Device.Tap((Rectangle)search);
 
                     first = false;
                 }
-                else
-                {
-                    Device.Tap(0x45, 0x141); // minus
-                    Wait(0, 1);
-                }
-
-                Device.Tap((Rectangle)search);
 
                 Wait(0, 1);
                 while (Device.Match("label.search", out match, search))
                 {
+                    if (Device.Match(0x54, 0x141, "icon.min", out Rectangle min, 0.95f))
+                    {
+                        Device.Tap(0x13f, 0xf1); // close
+                        return false;
+                    }
+
                     Device.Tap(0x45, 0x141); // minus
-                    Current.BarbarianLevel = Math.Max(Current.BarbarianLevel - 1, -25);
+                    Current.BarbarianLevel--;
                     Wait(0, 1);
                     Device.Tap((Rectangle)search); // click search
-                    Wait(0, 1);
+                    Wait(0, 1);                    
                 }
 
                 Wait(1, 2);
@@ -1331,15 +1335,9 @@ namespace RoKBot.Utils
 
                 Wait(0, 1);
 
-                if (!Device.Match("button.attack", out Rectangle attack))
-                {
-                    Current.BarbarianLevel = Math.Max(Current.BarbarianLevel - 1, -25);
-                    continue;
-                }
-                else
-                {
-                    while (Device.Match("button.attack", out attack, attack) && !Device.Tap(attack.X + attack.Width / 2, attack.Y + attack.Height / 2, "button.attack")) Wait(0, 1);                    
-                }
+                if (!Device.Match("button.attack", out Rectangle attack)) continue;
+
+                while (Device.Match("button.attack", out attack, attack) && !Device.Tap(attack.X + attack.Width / 2, attack.Y + attack.Height / 2, "button.attack")) Wait(0, 1);
 
                 Wait(1, 2);
 
@@ -1385,16 +1383,7 @@ namespace RoKBot.Utils
                     {
                         Device.Tap(0x22c, 0x53); // close
                         Wait(1, 2);
-                        Current.BarbarianLevel = Math.Max(Current.BarbarianLevel - 1, -25);
-
-                        if (Current.BarbarianLevel > -25)
-                        {
-                            continue;
-                        }
-                        else
-                        {
-                            return false;
-                        }
+                        continue;
                     }
 
                     if (Device.Tap(0x1ca, 0x16e, "action.march"))
@@ -1404,7 +1393,7 @@ namespace RoKBot.Utils
                         if (!Device.Match(0x1ca, 0x16e, "action.march", out match))
                         {
                             Helper.Print("Fight babarians");
-                            Current.BarbarianLevel = Math.Min(Current.BarbarianLevel + 1, 0);
+                            Current.BarbarianLevel++;
                             return true;
                         }
                         else

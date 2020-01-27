@@ -38,25 +38,30 @@ namespace RoKBot.Utils
         
         public static bool Match(Bitmap template, Bitmap source, out Rectangle match, Rectangle? searchZone = null, float threshold = 0.9f)
         {
+            bool pass = Match(template, source, out Rectangle[] matches, searchZone, threshold);
+            match = pass ? matches[0] : default(Rectangle);
+            return pass;
+        }
+
+        public static bool Match(Bitmap template, Bitmap source, out Rectangle[] matches, Rectangle? searchZone = null, float threshold = 0.9f)
+        {
             try
             {
                 if (template == null || source == null)
                 {
-                    match = default(Rectangle);
+                    matches = new Rectangle[0];
                     return false;
                 }
 
-                Rectangle[] results = searchZone == null
+                matches = searchZone == null
                     ? new ExhaustiveTemplateMatching(threshold).ProcessImage(source, template).OrderByDescending(i => i.Similarity).Select(i => i.Rectangle).ToArray()
                     : new ExhaustiveTemplateMatching(threshold).ProcessImage(source, template, (Rectangle)searchZone).OrderByDescending(i => i.Similarity).Select(i => i.Rectangle).ToArray();
 
-                match = results.Length > 0 ? results[0] : default(Rectangle);
-
-                return results.Length > 0;
+                return matches.Length > 0;
             }
-            catch(Exception)
+            catch (Exception)
             {
-                match = default(Rectangle);
+                matches = new Rectangle[0];
                 return false;
             }
         }
