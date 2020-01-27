@@ -2,9 +2,9 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -13,27 +13,25 @@ namespace RoKBot.Utils
     public static class Device
     {
         static AdbServer server = new AdbServer();
-        static List<DeviceData> devices;
+        static DeviceData device = null;
 
+        public static DateTime LastInteractiveUtc { get; private set; } = DateTime.UtcNow;
 
-        static Device()
-        {
-            server.StartServer(@"D:\Program Files\Microvirt\MEmu\adb.exe", restartServerIfNewer: true);
-            AdbClient.Instance.Connect("localhost:21503");
-            devices = AdbClient.Instance.GetDevices();
-
+        public static void Start()
+        {            
+            server.StartServer(@"D:\Program Files\Microvirt\MEmu\adb.exe", restartServerIfNewer: false);            
+            device = AdbClient.Instance.GetDevices().FirstOrDefault(i => i.State == DeviceState.Online);
+            LastInteractiveUtc = DateTime.UtcNow;
         }
 
-        public static void Run(string packgate, string activity)
+        public static void Run(string package)
         {
-            ConsoleOutputReceiver receiver = new ConsoleOutputReceiver();
-            AdbClient.Instance.ExecuteRemoteCommand("am start -n " + packgate + "/" + activity, devices[0], receiver);
+            Shell("monkey -p " + package);
         }
 
         public static void Kill(string package)
         {
-            ConsoleOutputReceiver receiver = new ConsoleOutputReceiver();
-            AdbClient.Instance.ExecuteRemoteCommand("am force-stop " + package, devices[0], receiver);
+            Shell("am force-stop " + package);
         }
 
         public static Bitmap Screen
@@ -41,33 +39,49 @@ namespace RoKBot.Utils
             [MethodImpl(MethodImplOptions.Synchronized)]
             get
             {
-
-                Shell("screencap /sdcard/screen.png");
-
-                using (SyncService service = new SyncService(devices[0]))
+                try
                 {
-                    using (MemoryStream ms = new MemoryStream())
+
+                    Shell("screencap /sdcard/screen.png");
+
+                    if (device == null) return null;
+
+                    using (SyncService service = new SyncService(device))
                     {
-                        service.Pull("/sdcard/screen.png", ms, null, CancellationToken.None);
-
-                        using (Image image = Image.FromStream(ms))
+                        using (MemoryStream ms = new MemoryStream())
                         {
-                            Bitmap bmp = new Bitmap(Math.Max(image.Width, image.Height), Math.Min(image.Width, image.Height), PixelFormat.Format24bppRgb);
+                            service.Pull("/sdcard/screen.png", ms, null, CancellationToken.None);
 
-                            using (Graphics g = Graphics.FromImage(bmp)) g.DrawImage(image, 0, 0);
+                            using (Image image = Image.FromStream(ms))
+                            {
+                                Bitmap bmp = new Bitmap(Math.Max(image.Width, image.Height), Math.Min(image.Width, image.Height), PixelFormat.Format24bppRgb);
 
-                            return bmp;
+                                using (Graphics g = Graphics.FromImage(bmp)) g.DrawImage(image, 0, 0);
+
+                                return bmp;
+                            }
                         }
                     }
+                }
+                catch(Exception)
+                {
+                    return null;
                 }
             }
         }
 
         public static string Shell(params string[] cmds)
-        {
-            ConsoleOutputReceiver receiver = new ConsoleOutputReceiver();
-            AdbClient.Instance.ExecuteRemoteCommand(string.Join(";", cmds), devices[0], receiver);
-            return receiver.ToString();
+        {                        
+            try
+            {
+                ConsoleOutputReceiver receiver = new ConsoleOutputReceiver();
+                AdbClient.Instance.ExecuteRemoteCommand(string.Join(";", cmds), device, receiver);
+                return receiver.ToString();
+            }
+            catch(Exception)
+            {
+                return null;
+            }            
         }
 
         public static void Press(int x, int y, int fingerWidth = 7)
@@ -79,6 +93,9 @@ namespace RoKBot.Utils
                 "sendevent /dev/input/event6 3 48 " + fingerWidth,
                 "sendevent /dev/input/event6 3 57 0",
                 "sendevent /dev/input/event6 0 0 0");
+
+            LastInteractiveUtc = DateTime.UtcNow;
+
         }
 
         public static void Release()
@@ -88,6 +105,9 @@ namespace RoKBot.Utils
                 "sendevent /dev/input/event6 3 57 -1",                
                 "sendevent /dev/input/event6 0 0 0"
             );
+
+            LastInteractiveUtc = DateTime.UtcNow;
+
         }
 
         public static void Move(int x, int y, int fingerWidth = 7)
@@ -98,6 +118,9 @@ namespace RoKBot.Utils
                 "sendevent /dev/input/event6 3 48 " + fingerWidth,
                 "sendevent /dev/input/event6 0 0 0"
                 );
+
+            LastInteractiveUtc = DateTime.UtcNow;
+
         }
 
         public static void Swipe(int x1, int y1, int x2, int y2, int ms)
@@ -139,6 +162,8 @@ namespace RoKBot.Utils
                 y += Helper.RandomGenerator.Next(-epsilon / 2, epsilon / 2 + 1);
 
                 Shell("input tap " + x + " " + y);
+
+                LastInteractiveUtc = DateTime.UtcNow;
             }
         }
 

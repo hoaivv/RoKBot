@@ -1,6 +1,7 @@
 ﻿using RoKBot.Utils;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Threading;
@@ -9,12 +10,14 @@ namespace RoKBot
 {
     class Program
     {
-        static void RunRoutine()
+        static void RoutineInvokingTask()
         {
             try
             {
                 List<Func<bool>> tasks = new List<Func<bool>>(new Func<bool>[]{
 
+                    Routine.DefeatBabarians,
+                    Routine.DefeatBabarians,
                     Routine.DefeatBabarians,
                     Routine.UpgradeCity,
                     Routine.CollectResources,
@@ -38,42 +41,26 @@ namespace RoKBot
 
                 Random random = new Random((int)(DateTime.UtcNow.Ticks % int.MaxValue));
 
-                //Console.WriteLine();
-                //Console.WriteLine("Starting ROK");
-
-                //Device.Run("com.lilithgame.roc.gp", "com.harry.engine.MainActivity");
-
                 Thread.CurrentThread.Join(1000);
 
-                Console.WriteLine();
-                Console.ForegroundColor = ConsoleColor.White;
-                Console.WriteLine("Initializing");
-                Console.ForegroundColor = ConsoleColor.Gray;
+                Helper.Print("Initializing", true);
                 Routine.Initialise();
 
                 while (true)
                 {                    
                     while (!Routine.IsReady) Routine.Wait(1, 2);
 
-                    Console.WriteLine();
-                    Console.ForegroundColor = ConsoleColor.White;
-                    Console.WriteLine("Starting new routine");                    
+                    Helper.Print("Starting new routine", true);                    
 
                     foreach (Func<bool> task in tasks.OrderBy(i => random.Next()))
                     {
                         if (random.Next(0, 101) < 30 && task != Routine.GatherResources) continue;
 
-                        Console.WriteLine();
-                        Console.ForegroundColor = ConsoleColor.White;
-                        Console.WriteLine("Running " + task.Method.Name);
-                        Console.ForegroundColor = ConsoleColor.Gray;
+                        Helper.Print("Running " + task.Method.Name, true);
                         task();
                     }
 
-                    Console.WriteLine();
-                    Console.ForegroundColor = ConsoleColor.White;
-                    Console.WriteLine("Running SwitchCharacter");
-                    Console.ForegroundColor = ConsoleColor.Gray;
+                    Helper.Print("Running SwitchCharacter", true);                    
                     Routine.SwitchCharacter();
                     Routine.Wait(10, 15);
                 }
@@ -81,85 +68,119 @@ namespace RoKBot
             }
             catch(ThreadAbortException)
             {
-                Console.WriteLine();
-                Console.ForegroundColor = ConsoleColor.White;
-                Console.WriteLine("All tasks stopped");
-                Console.ForegroundColor = ConsoleColor.Gray;
-                Console.WriteLine("Press Enter to resume");
+                Helper.Print("Routines stopped", true);                
+                Helper.Print("Press Enter to resume");
             }
         }
 
-        static void RunVerification()
+        static void HangProtectionTask()
         {
             try
             {
-                bool restartRountine = false;
-
                 while (true)
                 {
-                    while (Device.Match("button.verify", out Rectangle verify, null))
-                    {
-                        if (!Paused) restartRountine = true;
+                    Process[] processes = Process.GetProcessesByName("MEmu");
+
+                    if ((DateTime.UtcNow - Device.LastInteractiveUtc).TotalMinutes > 5 || processes.Length == 0)
+                    {                                                
+                        Helper.Print("Hang protection activated", true);                        
                         Paused = true;
 
-                        Routine.Wait(1, 2);
+                        Helper.Print("Stopping MEmu instances", true);
+                        
+                        foreach (Process process in processes) process.Kill();
 
-                        Device.Tap(verify);
+                        Routine.Wait(10, 15);
 
-                        Routine.Wait(1, 2);
-                        Rectangle slider;
+                        Helper.Print("Restarting MEmu", true);
 
-                        DateTime start = DateTime.UtcNow;
+                        Process.Start(@"D:\Program Files\Microvirt\MEmu\MEmu.exe");                        
 
-                        while (!Device.Match("button.slider", out slider)) Routine.Wait(1, 2);
+                        Routine.Wait(15, 20);
 
-                        Routine.Wait(1, 2);
-                        Device.Match("button.slider", out slider);
+                        Device.Start();
 
-                        int top = 0x75, left = 0xc9, right = 0x1b5, bottom = 0x105;
+                        Helper.Print("Starting RoK", true);                        
 
-                        int height = bottom - top;
-                        int width = right - left;
-
-                        using (Bitmap puzzle = Helper.Crop(Device.Screen, new Rectangle { X = left, Y = top, Width = width, Height = height }))
+                        if (Device.Tap("icon.rok"))
                         {
-                            if (Helper.Solve(puzzle, out int offsetX))
+                            Helper.Print("RoK Started");
+                            Paused = false;
+                        }
+                    }
+
+                    Thread.CurrentThread.Join(1000);
+                }
+            }
+            catch(ThreadAbortException)
+            {
+            }
+        }
+
+        static void VerificationTask()
+        {
+            try
+            {                
+                while (true)
+                {                    
+                    if (Device.Match("button.verify", out Rectangle verify))
+                    {
+                        Helper.Print("Verification solver activated", true);
+
+                        bool restartRountine = false;
+
+                        while (Device.Match("button.verify", out verify))
+                        {
+                            if (!Paused)
                             {
-                                Device.Swipe(slider, offsetX, Helper.RandomGenerator.Next(-5,6), Helper.RandomGenerator.Next(1000,1500));                                
+                                restartRountine = true;
+                                Paused = true;
+                                Routine.Wait(1, 2);
+                            }
 
-                                Routine.Wait(3, 5);
+                            Device.Tap(verify);
+                            Routine.Wait(5, 6);
 
-                                if (Device.Match("button.slider", out slider))
+                            if (!Device.Match("button.slider", out Rectangle slider))
+                            {
+                                Device.Tap(10, 10);
+                                Routine.Wait(1, 2);
+                                continue;
+                            }
+
+                            int top = 0x75, left = 0xc9, right = 0x1b5, bottom = 0x105;
+
+                            int height = bottom - top;
+                            int width = right - left;
+
+                            using (Bitmap puzzle = Helper.Crop(Device.Screen, new Rectangle { X = left, Y = top, Width = width, Height = height }))
+                            {
+                                if (Helper.Solve(puzzle, out int offsetX))
+                                {
+                                    Device.Swipe(slider, offsetX, Helper.RandomGenerator.Next(-5, 6), Helper.RandomGenerator.Next(1000, 1500));
+
+                                    Routine.Wait(3, 5);
+
+                                    if (Device.Match("button.slider", out slider))
+                                    {
+                                        Device.Tap(10, 10);
+                                        Routine.Wait(1, 2);
+                                    }
+                                }
+                                else
                                 {
                                     Device.Tap(10, 10);
                                     Routine.Wait(1, 2);
                                 }
                             }
-                            else
-                            {
-                                Device.Tap(10, 10);
-                                Routine.Wait(1, 2);
-                            }
                         }
+
+                        Helper.Print("Puzzle solved");
+
+                        if (restartRountine) Paused = false;
                     }
 
-                    if (restartRountine) Paused = false;                   
                     Routine.Wait(1, 2);
-
-                    restartRountine = false;
-
-                    if (Device.Match("label.hint", out Rectangle hint, null, 1) || Device.Match("label.loss", out Rectangle loss, null, 1) || Device.Match("label.network", out Rectangle network, null, 1))
-                    {
-                        if (!Paused) restartRountine = true;
-                        Paused = true;
-
-                        Routine.Wait(1, 2);
-
-                        Device.Tap("button.confirm");
-                    }
-
-                    if (restartRountine) Paused = false;
-                    Routine.Wait(5, 6);
                 }
             }
             catch(ThreadAbortException)
@@ -170,18 +191,20 @@ namespace RoKBot
         static bool Paused = false;
 
         static void Main(string[] args)
-        {
-            Console.ForegroundColor = ConsoleColor.White;
-            Console.WriteLine("Press Enter to start");
+        {                        
+            Helper.Print("Press Enter to start", true);
             Console.ReadLine();
-            Console.ForegroundColor = ConsoleColor.Gray;
-            Console.WriteLine("Starting threads");
+            Helper.Print("Starting threads", true);
 
-            Thread V = new Thread(new ThreadStart(RunVerification));                        
-            Thread T = new Thread(new ThreadStart(RunRoutine));
+            Thread V = new Thread(new ThreadStart(VerificationTask));                        
+            Thread T = new Thread(new ThreadStart(RoutineInvokingTask));
+            Thread P = new Thread(new ThreadStart(HangProtectionTask));
 
             bool last = Paused;
 
+            Device.Start();
+
+            P.Start();
             T.Start();
             V.Start();
 
@@ -199,7 +222,7 @@ namespace RoKBot
                             }
                             else
                             {
-                                T = new Thread(new ThreadStart(RunRoutine));
+                                T = new Thread(new ThreadStart(RoutineInvokingTask));
                                 T.Start();
                             }
 

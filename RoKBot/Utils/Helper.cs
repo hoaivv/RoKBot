@@ -5,7 +5,6 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Threading;
 
 namespace RoKBot.Utils
 {
@@ -27,11 +26,24 @@ namespace RoKBot.Utils
                 return buffer;
             }
         }
+
+        public static void Print(string content, bool isSubject = false)
+        {
+            Console.ForegroundColor = isSubject ? ConsoleColor.White : ConsoleColor.Gray;
+            if (isSubject) Console.WriteLine();
+            Console.WriteLine("[" + DateTime.Now.ToString("HH:mm") + "] " + content);            
+        }        
         
         public static bool Match(Bitmap template, Bitmap source, out Rectangle match, Rectangle? searchZone = null, float threshold = 0.9f)
         {
             try
             {
+                if (template == null || source == null)
+                {
+                    match = default(Rectangle);
+                    return false;
+                }
+
                 Rectangle[] results = searchZone == null
                     ? new ExhaustiveTemplateMatching(threshold).ProcessImage(source, template).OrderByDescending(i => i.Similarity).Select(i => i.Rectangle).ToArray()
                     : new ExhaustiveTemplateMatching(threshold).ProcessImage(source, template, (Rectangle)searchZone).OrderByDescending(i => i.Similarity).Select(i => i.Rectangle).ToArray();
@@ -49,6 +61,8 @@ namespace RoKBot.Utils
 
         public static Bitmap Crop(Bitmap image, Rectangle bounds)
         {
+            if (image == null) return null;
+
             Bitmap crop = new Bitmap(bounds.Width, bounds.Height, PixelFormat.Format24bppRgb);
 
             using (Graphics g = Graphics.FromImage(crop))
@@ -77,6 +91,12 @@ namespace RoKBot.Utils
 
         public static bool Solve(Bitmap puzzle, out int offsetX)
         {
+            if (puzzle == null)
+            {
+                offsetX = 0;
+                return false;
+            }
+
             using (Bitmap test = new GrayscaleBT709().Apply(puzzle))
             {
                 BitmapData data = test.LockBits(new Rectangle(0, 0, test.Width, test.Height), ImageLockMode.ReadWrite, test.PixelFormat);

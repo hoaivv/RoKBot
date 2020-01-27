@@ -80,7 +80,7 @@ namespace RoKBot.Utils
 
                     Wait(1, 2);
                     Device.Tap(0x141, 0xdd); // request help
-                    Console.WriteLine("Upgrading " + name);
+                    Helper.Print("Upgrading " + name);
 
                     return true;
 
@@ -163,6 +163,7 @@ namespace RoKBot.Utils
                     Wait(1, 2);
                     if (Device.Tap("icon.research"))
                     {
+                        Wait(1, 2);
                         if (Device.Match("button.getmore", out Rectangle getmore))
                         {
                             Device.Tap(0x1f7, 0x82); // close getmore
@@ -174,12 +175,11 @@ namespace RoKBot.Utils
                             return false;
                         }
 
-                        Wait(1, 2);
                         Device.Tap(0x1c2, 0x83); // request help
                         Wait(0, 1);
                         Device.Tap(0x22d, 0x5f); // close
 
-                        Console.WriteLine("Researching");
+                        Helper.Print("Researching");
                         return true;
                     }
                     else
@@ -237,7 +237,7 @@ namespace RoKBot.Utils
                     Wait(1, 2);
                     OpenMap();
 
-                    Console.WriteLine("Healing");
+                    Helper.Print("Healing");
 
                     return true;
                 }
@@ -279,7 +279,7 @@ namespace RoKBot.Utils
 
                     if (!Device.Match(0x1ca, 0x16e, "action.march", out Rectangle match))
                     {
-                        Console.WriteLine("Gathering " + type);
+                        Helper.Print("Gathering " + type);
                         return true;
                     }
                     else
@@ -321,7 +321,7 @@ namespace RoKBot.Utils
                 Device.Tap(0x13f, 0xf1);
                 Wait(1, 2);
 
-                return false;
+                return true;
             }
 
             Device.Tap(0x114, 0x141, 0); // max level;
@@ -362,7 +362,7 @@ namespace RoKBot.Utils
                 Device.Tap(0x13f, 0xf1);
                 Wait(1, 2);
 
-                return false;
+                return true;
             }
 
             Device.Tap(0x174, 0x141, 0); // max level;
@@ -403,7 +403,7 @@ namespace RoKBot.Utils
                 Device.Tap(0x13f, 0xf1);
                 Wait(1, 2);
 
-                return false;
+                return true;
             }
 
             Device.Tap(0x1d3, 0x141, 0); // max level;
@@ -444,7 +444,7 @@ namespace RoKBot.Utils
                 Device.Tap(0x13f, 0xf1);
                 Wait(1, 2);
 
-                return false;
+                return true;
             }
 
             Device.Tap(0x231, 0x141); // max level;
@@ -524,7 +524,7 @@ namespace RoKBot.Utils
                 }
                 else
                 {
-                    Console.WriteLine("Traning " + type);
+                    Helper.Print("Traning " + type);
                 }
             }
 
@@ -777,7 +777,7 @@ namespace RoKBot.Utils
             Wait(3, 4);
             Device.Tap(0x13, 0x13); // back
 
-            if (recruited) Console.WriteLine("Keys used");
+            if (recruited) Helper.Print("Keys used");
 
             OpenMap();
 
@@ -791,13 +791,13 @@ namespace RoKBot.Utils
         {
             OpenCity();
 
-            if (Device.Tap(0x85, 0x109, "collect.food") || Device.Tap(0x85, 0x109, "collect.food.old")) Console.WriteLine("Food collected");
+            if (Device.Tap(0x85, 0x109, "collect.food") || Device.Tap(0x85, 0x109, "collect.food.old")) Helper.Print("Food collected");
             Wait(1, 2);
-            if (Device.Tap(0x44, 0xdc, "collect.wood") || Device.Tap(0x44, 0xdc, "collect.wood.old")) Console.WriteLine("Wood collected");
+            if (Device.Tap(0x44, 0xdc, "collect.wood") || Device.Tap(0x44, 0xdc, "collect.wood.old")) Helper.Print("Wood collected");
             Wait(1, 2);
-            if (Device.Tap(0x8a, 0xad, "collect.stone") || Device.Tap(0x8a, 0xad, "collect.stone.old")) Console.WriteLine("Stone collected");
+            if (Device.Tap(0x8a, 0xad, "collect.stone") || Device.Tap(0x8a, 0xad, "collect.stone.old")) Helper.Print("Stone collected");
             Wait(1, 2);
-            if (Device.Tap(0xcd, 0x81, "collect.gold") || Device.Tap(0xcd, 0x81, "collect.gold.old")) Console.WriteLine("Gold collected");
+            if (Device.Tap(0xcd, 0x81, "collect.gold") || Device.Tap(0xcd, 0x81, "collect.gold.old")) Helper.Print("Gold collected");
             Wait(1, 2);
 
             return true;
@@ -839,7 +839,7 @@ namespace RoKBot.Utils
                 }
             }
 
-            if (send) Console.WriteLine("Exploring");
+            if (send) Helper.Print("Exploring");
 
             OpenMap();
 
@@ -866,7 +866,7 @@ namespace RoKBot.Utils
             Wait(2, 3);
             Device.Tap(0x3e, 0xaf);
             Wait(2, 3);
-            if (Device.Tap(0x141, 0x145, "button.confirm")) Console.WriteLine("Rewards claimed (Campaign)");
+            if (Device.Tap(0x141, 0x145, "button.confirm")) Helper.Print("Rewards claimed (Campaign)");
             Wait(2, 3);
             Device.Tap(0x13, 0x13);
             Wait(2, 3);
@@ -903,7 +903,7 @@ namespace RoKBot.Utils
                 Wait(2, 3);
                 if (Device.Tap(0x13e, 0x184, "button.help")) // button help
                 {
-                    Console.WriteLine("Allies helped");
+                    Helper.Print("Allies helped");
                 }
                 else
                 {
@@ -954,7 +954,7 @@ namespace RoKBot.Utils
                 Wait(2, 3);
                 Device.Tap(0x22d, 0x51); // close button of gift menu
 
-                if (hasGift) Console.WriteLine("Gifts claimed");
+                if (hasGift) Helper.Print("Gifts claimed");
 
                 // DONATE                
 
@@ -979,7 +979,7 @@ namespace RoKBot.Utils
                     Wait(2, 3);
                     Device.Tap(0x22d, 0x5f); // close button of technology menu
                    
-                    if (donationMade) Console.WriteLine("Donated");
+                    if (donationMade) Helper.Print("Donated");
                 }
                 else
                 {
@@ -1046,7 +1046,7 @@ namespace RoKBot.Utils
 
                 Device.Tap(0x222, 0x67); // close button of quest menu
 
-                if (questClaimed) Console.WriteLine("Quests claimed");
+                if (questClaimed) Helper.Print("Quests claimed");
                 return true;
             }
 
@@ -1161,7 +1161,7 @@ namespace RoKBot.Utils
             Wait(2, 3);
             Device.Tap(0x268, 0x16); // close
 
-            if (claimed) Console.WriteLine("Mails claimed");
+            if (claimed) Helper.Print("Mails claimed");
 
             return true;
         }
@@ -1241,7 +1241,7 @@ namespace RoKBot.Utils
                     Wait(1, 2);
                     Device.Tap(0x141, 0xdd);
 
-                    Console.WriteLine("Build");
+                    Helper.Print("Build");
                     return true;
                 }
                 else
@@ -1258,7 +1258,7 @@ namespace RoKBot.Utils
                     Wait(1, 2);
                     Device.Tap(0x141, 0xdd);
 
-                    Console.WriteLine("Upgrade main building");
+                    Helper.Print("Upgrade main building");
                     return true;
                 }
             }
@@ -1273,11 +1273,6 @@ namespace RoKBot.Utils
     partial class Routine
     {
         public static bool DefeatBabarians()
-        {
-            return DefeatBabariansOnce() && DefeatBabariansOnce() && DefeatBabariansOnce() && DefeatBabariansOnce();
-        }
-
-        public static bool DefeatBabariansOnce()
         {
             OpenMap();
 
@@ -1313,7 +1308,7 @@ namespace RoKBot.Utils
                 while (Device.Match("label.search", out match, search))
                 {
                     Device.Tap(0x45, 0x141); // minus
-                    Current.BarbarianLevel--;
+                    Current.BarbarianLevel = Math.Max(Current.BarbarianLevel - 1, -25);
                     Wait(0, 1);
                     Device.Tap((Rectangle)search); // click search
                     Wait(0, 1);
@@ -1323,13 +1318,20 @@ namespace RoKBot.Utils
                 Device.Tap(0x13f, 0xf1); // click babarians in map
 
                 Wait(0, 1);
+
                 if (!Device.Match("button.attack", out Rectangle attack))
                 {
-                    Current.BarbarianLevel -= 5;
+                    Current.BarbarianLevel = Math.Max(Current.BarbarianLevel - 5, -25);
                     continue;
                 }
                 else
                 {
+                    if (!Device.Match("button.attack", out attack, attack))
+                    {
+                        Wait(0, 1);
+                        if (!Device.Match("button.attack", out attack)) continue;                        
+                    }
+
                     Device.Tap(attack);
                 }
 
@@ -1368,7 +1370,7 @@ namespace RoKBot.Utils
                         Wait(1, 2);
                     }
 
-                    if (Device.Tap(0x153, 0x176, "button.max", 1))
+                    if (Device.Tap(0x153, 0x176, "button.max", 0.98f))
                     {
                         Wait(1, 2);
                     }
@@ -1377,8 +1379,16 @@ namespace RoKBot.Utils
                     {
                         Device.Tap(0x22c, 0x53); // close
                         Wait(1, 2);
-                        Current.BarbarianLevel--;
-                        continue;
+                        Current.BarbarianLevel = Math.Max(Current.BarbarianLevel - 1, -25);
+
+                        if (Current.BarbarianLevel > -25)
+                        {
+                            continue;
+                        }
+                        else
+                        {
+                            return false;
+                        }
                     }
 
                     if (Device.Tap(0x1ca, 0x16e, "action.march"))
@@ -1387,8 +1397,8 @@ namespace RoKBot.Utils
 
                         if (!Device.Match(0x1ca, 0x16e, "action.march", out match))
                         {
-                            Console.WriteLine("Fight babarians");
-                            Current.BarbarianLevel++;
+                            Helper.Print("Fight babarians");
+                            Current.BarbarianLevel = Math.Min(Current.BarbarianLevel + 1, 0);
                             return true;
                         }
                         else
@@ -1458,7 +1468,7 @@ namespace RoKBot.Utils
                 Wait(1, 2);
                 Device.Tap(0x141, 0xdd);                
 
-                Console.WriteLine("Build");
+                Helper.Print("Build");
                 return true;
             }
             finally
@@ -1488,7 +1498,7 @@ namespace RoKBot.Utils
             {
                 while (!IsReady) Wait(1, 2);
 
-                Console.WriteLine("Detecting characters");
+                Helper.Print("Detecting characters");
 
                 Device.Tap(0x15, 0x15); // open profile
                 Wait(2, 3);
@@ -1523,7 +1533,7 @@ namespace RoKBot.Utils
                     }
                 }
 
-                Console.WriteLine("Detected " + Accounts.Count + " characters");
+                Helper.Print("Detected " + Accounts.Count + " characters");
 
                 while (Current == null)
                 {
@@ -1545,7 +1555,7 @@ namespace RoKBot.Utils
                     Accounts.Enqueue(test);
                 }
 
-                Console.WriteLine("Current character: #" + Current.Index);
+                Helper.Print("Current character: #" + Current.Index);
 
                 Wait(2, 3);
                 Device.Tap(0x221, 0x65); // close account management
@@ -1556,7 +1566,7 @@ namespace RoKBot.Utils
             }
             else
             {
-                Console.WriteLine("Initialized, resume with character #" + Current.Index);
+                Helper.Print("Initialized, resume with character #" + Current.Index);
             }
         }
 
@@ -1586,7 +1596,7 @@ namespace RoKBot.Utils
                     if (Device.Tap(0x197, 0x13c, "button.yes"))
                     {
                         Current = test;
-                        Console.WriteLine("Switched to character #" + test.Index);
+                        Helper.Print("Switched to character #" + test.Index);
                         Wait(20, 25);
 
                         while (!IsReady) Wait(2, 3);                        
