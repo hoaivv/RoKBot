@@ -315,6 +315,10 @@ namespace RoKBot
                         {
                             Paused = !Paused;
                         }
+                        else
+                        {
+                            Helper.Print("Routines enable/disable locked. try again latter", true);
+                        }
                     }
                 }
                 catch (ThreadAbortException)

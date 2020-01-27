@@ -1278,6 +1278,8 @@ namespace RoKBot.Utils
 
             Rectangle? search = null;
 
+            bool first = true;
+
             while (true)
             {
                 if (!Device.Tap(0x1c, 0x186, "button.search")) // open gathering menu
@@ -1296,7 +1298,17 @@ namespace RoKBot.Utils
                 Device.Tap(0xba, 0x141); // max level;                
                 Wait(0, 1);
 
-                for (int i = 0; i > Current.BarbarianLevel; i--)
+                if (first)
+                {
+                    for (int i = 0; i > Current.BarbarianLevel; i--)
+                    {
+                        Device.Tap(0x45, 0x141); // minus
+                        Wait(0, 1);
+                    }
+
+                    first = false;
+                }
+                else
                 {
                     Device.Tap(0x45, 0x141); // minus
                     Wait(0, 1);
@@ -1321,18 +1333,12 @@ namespace RoKBot.Utils
 
                 if (!Device.Match("button.attack", out Rectangle attack))
                 {
-                    Current.BarbarianLevel = Math.Max(Current.BarbarianLevel - 5, -25);
+                    Current.BarbarianLevel = Math.Max(Current.BarbarianLevel - 1, -25);
                     continue;
                 }
                 else
                 {
-                    if (!Device.Match("button.attack", out attack, attack))
-                    {
-                        Wait(0, 1);
-                        if (!Device.Match("button.attack", out attack)) continue;                        
-                    }
-
-                    Device.Tap(attack);
+                    while (Device.Match("button.attack", out attack, attack) && !Device.Tap(attack.X + attack.Width / 2, attack.Y + attack.Height / 2, "button.attack")) Wait(0, 1);                    
                 }
 
                 Wait(1, 2);
