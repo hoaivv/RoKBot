@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Threading;
 
@@ -133,7 +134,7 @@ namespace RoKBot
 
                         Helper.Print("Restarting MEmu");
 
-                        Process.Start(@"D:\Program Files\Microvirt\MEmu\MEmu.exe");                        
+                        Process.Start(Path.Combine(Helper.MEmuPath, "MEmu.exe"));                        
 
                         Routine.Wait(15, 20);
 
