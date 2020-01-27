@@ -136,23 +136,30 @@ namespace RoKBot
 
                         Process.Start(Path.Combine(Helper.MEmuPath, "MEmu.exe"));                        
 
-                        Routine.Wait(15, 20);
-
                         Helper.Print("Restarting adb connection");
 
-                        Device.Start();
+                        Device.Start();                        
 
-                        Helper.Print("Starting RoK");                        
+                        DateTime start = DateTime.UtcNow;
 
-                        if (Device.Tap("icon.rok"))
+                        while ((DateTime.UtcNow - start).TotalMinutes < 5)
                         {                            
-                            if (restartRoutines)
+                            if (Device.Tap("icon.rok") && restartRoutines)
                             {
-                                Paused = false;
-                            }
-                        }
+                                Helper.Print("Starting RoK");
 
-                        Resumable = true;
+                                Paused = false;
+                                Resumable = true;
+                                break;
+                            }
+
+                            Routine.Wait(1, 2);
+                        }       
+                        
+                        if (!Resumable)
+                        {
+                            Helper.Print("Failed to start RoK");
+                        }
                     }
 
                     Thread.CurrentThread.Join(1000);
