@@ -10,6 +10,8 @@ namespace RoKBot.Utils
 {
     static class Helper
     {
+        public const string MEmuPath = @"D:\Program Files\Microvirt\MEmu";
+
         public static Random RandomGenerator = new Random((int)DateTime.UtcNow.Ticks);
 
         public static Bitmap Load(string file)

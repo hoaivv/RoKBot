@@ -17,12 +17,29 @@ namespace RoKBot.Utils
 
         public static DateTime LastInteractiveUtc { get; private set; } = DateTime.UtcNow;
 
-        public static void Start()
-        {            
-            server.StartServer(@"D:\Program Files\Microvirt\MEmu\adb.exe", restartServerIfNewer: false);            
-            device = AdbClient.Instance.GetDevices().FirstOrDefault(i => i.State == DeviceState.Online);
-            LastInteractiveUtc = DateTime.UtcNow;
+        static Device()
+        {
+            server.StartServer(Path.Combine(Helper.MEmuPath, "adb.exe"), restartServerIfNewer: false);
         }
+
+        public static void Start()
+        {
+            lock (server)
+            {
+                device = AdbClient.Instance.GetDevices().FirstOrDefault(i => i.State == DeviceState.Online);
+                if (device != null) LastInteractiveUtc = DateTime.UtcNow;
+            }
+        }
+
+        public static void Stop()
+        {
+            lock (server)
+            {
+                device = null;
+            }
+        }
+
+        public static bool Ready => device != null;
 
         public static void Run(string package)
         {
@@ -39,49 +56,56 @@ namespace RoKBot.Utils
             [MethodImpl(MethodImplOptions.Synchronized)]
             get
             {
-                try
+                lock (server)
                 {
-
-                    Shell("screencap /sdcard/screen.png");
-
-                    if (device == null) return null;
-
-                    using (SyncService service = new SyncService(device))
+                    try
                     {
-                        using (MemoryStream ms = new MemoryStream())
+                        if (device == null || Shell("screencap /sdcard/screen.png") == null) return null;
+
+                        using (SyncService service = new SyncService(device))
                         {
-                            service.Pull("/sdcard/screen.png", ms, null, CancellationToken.None);
-
-                            using (Image image = Image.FromStream(ms))
+                            using (MemoryStream ms = new MemoryStream())
                             {
-                                Bitmap bmp = new Bitmap(Math.Max(image.Width, image.Height), Math.Min(image.Width, image.Height), PixelFormat.Format24bppRgb);
+                                service.Pull("/sdcard/screen.png", ms, null, CancellationToken.None);
 
-                                using (Graphics g = Graphics.FromImage(bmp)) g.DrawImage(image, 0, 0);
+                                using (Image image = Image.FromStream(ms))
+                                {
+                                    Bitmap bmp = new Bitmap(Math.Max(image.Width, image.Height), Math.Min(image.Width, image.Height), PixelFormat.Format24bppRgb);
 
-                                return bmp;
+                                    using (Graphics g = Graphics.FromImage(bmp)) g.DrawImage(image, 0, 0);
+
+                                    return bmp;
+                                }
                             }
                         }
                     }
-                }
-                catch(Exception)
-                {
-                    return null;
+                    catch (Exception)
+                    {
+                        device = null;
+                        return null;
+                    }
                 }
             }
         }
 
         public static string Shell(params string[] cmds)
-        {                        
-            try
+        {
+            lock (server)
             {
-                ConsoleOutputReceiver receiver = new ConsoleOutputReceiver();
-                AdbClient.Instance.ExecuteRemoteCommand(string.Join(";", cmds), device, receiver);
-                return receiver.ToString();
+                try
+                {
+                    if (device == null) return null;
+
+                    ConsoleOutputReceiver receiver = new ConsoleOutputReceiver();
+                    AdbClient.Instance.ExecuteRemoteCommand(string.Join(";", cmds), device, receiver);
+                    return receiver.ToString();
+                }
+                catch (Exception)
+                {
+                    device = null;
+                    return null;
+                }
             }
-            catch(Exception)
-            {
-                return null;
-            }            
         }
 
         public static void Press(int x, int y, int fingerWidth = 7)

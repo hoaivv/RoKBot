@@ -10,35 +10,37 @@ namespace RoKBot
 {
     class Program
     {
+        static Queue<Func<bool>> CommittingRoutines = new Queue<Func<bool>>();
+
+        static List<Func<bool>> Routines = new List<Func<bool>>(new Func<bool>[]{
+
+            Routine.DefeatBabarians,
+            Routine.DefeatBabarians,
+            Routine.DefeatBabarians,
+            Routine.UpgradeCity,
+            Routine.CollectResources,
+            Routine.GatherResources,
+            Routine.AllianceTasks,
+            Routine.ClaimCampaign,
+            Routine.ReadMails,
+            Routine.ClaimVIP,
+            Routine.Recruit,
+            Routine.Explore,
+            Routine.TrainInfantry,
+            Routine.TrainArcher,
+            Routine.TrainCavalry,
+            Routine.TrainSiege,
+            Routine.ClaimQuests,
+            Routine.Build,
+            Routine.ClaimDaily,
+            Routine.HealTroops,
+            Routine.Research
+        });
+
         static void RoutineInvokingTask()
         {
             try
             {
-                List<Func<bool>> tasks = new List<Func<bool>>(new Func<bool>[]{
-
-                    Routine.DefeatBabarians,
-                    Routine.DefeatBabarians,
-                    Routine.DefeatBabarians,
-                    Routine.UpgradeCity,
-                    Routine.CollectResources,
-                    Routine.GatherResources,
-                    Routine.AllianceTasks,
-                    Routine.ClaimCampaign,
-                    Routine.ReadMails,
-                    Routine.ClaimVIP,
-                    Routine.Recruit,
-                    Routine.Explore,
-                    Routine.TrainInfantry,
-                    Routine.TrainArcher,
-                    Routine.TrainCavalry,
-                    Routine.TrainSiege,
-                    Routine.ClaimQuests,
-                    Routine.Build,
-                    Routine.ClaimDaily,
-                    Routine.HealTroops,
-                    Routine.Research
-                });
-
                 Random random = new Random((int)(DateTime.UtcNow.Ticks % int.MaxValue));
 
                 Thread.CurrentThread.Join(1000);
@@ -50,16 +52,28 @@ namespace RoKBot
                 {                    
                     while (!Routine.IsReady) Routine.Wait(1, 2);
 
-                    Helper.Print("Starting new routine", true);                    
-
-                    foreach (Func<bool> task in tasks.OrderBy(i => random.Next()))
+                    if (CommittingRoutines.Count == 0)
                     {
-                        if (random.Next(0, 101) < 30 && task != Routine.GatherResources) continue;
+                        Helper.Print("Starting new routines", true);
 
-                        Helper.Print("Running " + task.Method.Name, true);
-                        task();
+                        foreach (Func<bool> routine in Routines.OrderBy(i => random.Next()).ToArray()) CommittingRoutines.Enqueue(routine);
                     }
+                                        
+                    while(CommittingRoutines.Count > 0)
+                    {
+                        Func<bool> routine = CommittingRoutines.Peek();
 
+                        if (random.Next(0, 101) < 30 && routine != Routine.GatherResources)
+                        {
+                            CommittingRoutines.Dequeue();
+                            continue;
+                        }
+
+                        Helper.Print("Running " + routine.Method.Name, true);
+                        routine();
+                        CommittingRoutines.Dequeue();
+                    }
+                    
                     Helper.Print("Running SwitchCharacter", true);                    
                     Routine.SwitchCharacter();
                     Routine.Wait(10, 15);
@@ -68,8 +82,15 @@ namespace RoKBot
             }
             catch(ThreadAbortException)
             {
-                Helper.Print("Routines stopped", true);                
-                Helper.Print("Press Enter to resume");
+                if (Resumable)
+                {
+                    Helper.Print("Routines stopped", true);
+                    Helper.Print("Press Enter to resume");
+                }
+                else
+                {
+                    Helper.Print("Routines stopped", true);
+                }
             }
         }
 
@@ -81,32 +102,56 @@ namespace RoKBot
                 {
                     Process[] processes = Process.GetProcessesByName("MEmu");
 
-                    if ((DateTime.UtcNow - Device.LastInteractiveUtc).TotalMinutes > 5 || processes.Length == 0)
-                    {                                                
-                        Helper.Print("Hang protection activated", true);                        
+                    if ((DateTime.UtcNow - Device.LastInteractiveUtc).TotalMinutes > 5 || processes.Length == 0 || !Device.Ready)
+                    {                                                                        
+                        bool restartRoutines = !Paused;
+
+                        Resumable = false;
                         Paused = true;
 
-                        Helper.Print("Stopping MEmu instances", true);
-                        
-                        foreach (Process process in processes) process.Kill();
+                        if (restartRoutines)
+                        {
+                            Routine.Wait(1, 2);
+                        }                                                
 
-                        Routine.Wait(10, 15);
+                        Helper.Print("Hang protection activated", true);
 
-                        Helper.Print("Restarting MEmu", true);
+                        if (Device.Ready)
+                        {
+                            Helper.Print("Stopping adb connection");
+                            Device.Stop();
+                            Routine.Wait(1, 2);
+                        }
+
+                        if (processes.Length > 0)
+                        {
+                            Helper.Print("Stopping MEmu instances");
+                            foreach (Process process in processes) process.Kill();
+
+                            Routine.Wait(10, 15);
+                        }
+
+                        Helper.Print("Restarting MEmu");
 
                         Process.Start(@"D:\Program Files\Microvirt\MEmu\MEmu.exe");                        
 
                         Routine.Wait(15, 20);
 
+                        Helper.Print("Restarting adb connection");
+
                         Device.Start();
 
-                        Helper.Print("Starting RoK", true);                        
+                        Helper.Print("Starting RoK");                        
 
                         if (Device.Tap("icon.rok"))
-                        {
-                            Helper.Print("RoK Started");
-                            Paused = false;
+                        {                            
+                            if (restartRoutines)
+                            {
+                                Paused = false;
+                            }
                         }
+
+                        Resumable = true;
                     }
 
                     Thread.CurrentThread.Join(1000);
@@ -125,26 +170,32 @@ namespace RoKBot
                 {                    
                     if (Device.Match("button.verify", out Rectangle verify))
                     {
+                        Resumable = false;
+
+                        bool restartRountine = !Paused;
+                        
+                        if (!Paused)
+                        {
+                            Paused = true;
+                            Routine.Wait(1, 2);
+                        }
+
                         Helper.Print("Verification solver activated", true);
 
-                        bool restartRountine = false;
-
                         while (Device.Match("button.verify", out verify))
-                        {
-                            if (!Paused)
-                            {
-                                restartRountine = true;
-                                Paused = true;
-                                Routine.Wait(1, 2);
-                            }
+                        {                                                        
+                            Helper.Print("Accquiring puzzle");
 
                             Device.Tap(verify);
                             Routine.Wait(5, 6);
 
                             if (!Device.Match("button.slider", out Rectangle slider))
                             {
+                                Helper.Print("Puzzle not found, retry after 1-2 seconds");
+
                                 Device.Tap(10, 10);
-                                Routine.Wait(1, 2);
+                                Routine.Wait(1, 2);                                
+
                                 continue;
                             }
 
@@ -154,7 +205,7 @@ namespace RoKBot
                             int width = right - left;
 
                             using (Bitmap puzzle = Helper.Crop(Device.Screen, new Rectangle { X = left, Y = top, Width = width, Height = height }))
-                            {
+                            {                                
                                 if (Helper.Solve(puzzle, out int offsetX))
                                 {
                                     Device.Swipe(slider, offsetX, Helper.RandomGenerator.Next(-5, 6), Helper.RandomGenerator.Next(1000, 1500));
@@ -163,12 +214,15 @@ namespace RoKBot
 
                                     if (Device.Match("button.slider", out slider))
                                     {
+                                        Helper.Print("False positive, retry after 1-2 seconds");
+
                                         Device.Tap(10, 10);
                                         Routine.Wait(1, 2);
                                     }
                                 }
                                 else
                                 {
+                                    Helper.Print("Solution not found, retry after 1-2 seconds");
                                     Device.Tap(10, 10);
                                     Routine.Wait(1, 2);
                                 }
@@ -176,11 +230,12 @@ namespace RoKBot
                         }
 
                         Helper.Print("Puzzle solved");
-
                         if (restartRountine) Paused = false;
+
+                        Resumable = true;
                     }
 
-                    Routine.Wait(1, 2);
+                    Thread.CurrentThread.Join(1000);
                 }
             }
             catch(ThreadAbortException)
@@ -189,6 +244,7 @@ namespace RoKBot
         }
 
         static bool Paused = false;
+        static bool Resumable = true;
 
         static void Main(string[] args)
         {                        
@@ -245,7 +301,11 @@ namespace RoKBot
                     while (true)
                     {
                         Console.ReadLine();
-                        Paused = !Paused;                        
+
+                        if (Resumable)
+                        {
+                            Paused = !Paused;
+                        }
                     }
                 }
                 catch (ThreadAbortException)
