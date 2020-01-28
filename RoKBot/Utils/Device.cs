@@ -22,20 +22,12 @@ namespace RoKBot.Utils
             server.StartServer(Path.Combine(Helper.MEmuPath, "adb.exe"), restartServerIfNewer: false);
         }
 
-        public static void Start()
+        public static void Initialise()
         {
             lock (server)
             {
                 device = AdbClient.Instance.GetDevices().FirstOrDefault(i => i.State == DeviceState.Online);
                 if (device != null) LastInteractiveUtc = DateTime.UtcNow;
-            }
-        }
-
-        public static void Stop()
-        {
-            lock (server)
-            {
-                device = null;
             }
         }
 

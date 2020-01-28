@@ -117,13 +117,6 @@ namespace RoKBot
 
                         Helper.Print("Hang protection activated", true);
 
-                        if (Device.Ready)
-                        {
-                            Helper.Print("Stopping adb connection");
-                            Device.Stop();
-                            Routine.Wait(1, 2);
-                        }
-
                         if (processes.Length > 0)
                         {
                             Helper.Print("Stopping MEmu instances");
@@ -142,7 +135,7 @@ namespace RoKBot
 
                         while ((DateTime.UtcNow - start).TotalMinutes < 5)
                         {
-                            Device.Start();
+                            Device.Initialise();
 
                             if (Device.Tap("icon.rok"))
                             {
@@ -267,7 +260,7 @@ namespace RoKBot
 
             bool last = Paused;
 
-            Device.Start();
+            Device.Initialise();
 
             P.Start();
             T.Start();

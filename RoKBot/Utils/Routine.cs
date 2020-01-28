@@ -1197,12 +1197,15 @@ namespace RoKBot.Utils
             OpenCity();
 
             Device.Tap(0x197, 0x2e);
-            Wait(1, 2);
-            Device.Tap(0x1fc, 0x143);
-            Wait(2, 3);
+            Wait(1, 2);            
 
             try
             {
+                if (Device.Match("icon.speedup", out Rectangle speedup)) return false;
+
+                Device.Tap(0x1fc, 0x143);
+                Wait(2, 3);
+
                 if (!Device.Tap("icon.upgrade"))
                 {
                     while (Device.Match("button.go", out Rectangle go, null, 0.95f))
