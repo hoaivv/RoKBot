@@ -64,7 +64,7 @@ namespace RoKBot
                     {
                         Func<bool> routine = CommittingRoutines.Peek();
 
-                        if (random.Next(0, 101) < 30 && routine != Routine.GatherResources)
+                        if (random.Next(0, 100) < 30 && routine != Routine.GatherResources)
                         {
                             CommittingRoutines.Dequeue();
                             continue;

@@ -232,6 +232,28 @@ namespace RoKBot.Utils
             }
         }
 
+        public static bool Match(string file, out Rectangle[] matches, Rectangle? searchZone = null, float similarityThreshold = 0.9f)
+        {
+            string png = Path.Combine("assets", file + ".png");
+            string jpg = Path.Combine("assets", file + ".jpg");
+
+            file = File.Exists(png) ? png : File.Exists(jpg) ? jpg : null;
+
+            if (file == null)
+            {
+                matches = new Rectangle[0];
+                return false;
+            }
+
+            using (Bitmap tmpl = Helper.Load(file))
+            {
+                using (Bitmap screen = Screen)
+                {
+                    return Helper.Match(tmpl, screen, out matches, searchZone, similarityThreshold);
+                }
+            }
+        }
+
         public static bool Match(int x, int y, string file, out Rectangle match, float similarityThreshold = 0.9f)
         {
             string png = Path.Combine("assets", file + ".png");

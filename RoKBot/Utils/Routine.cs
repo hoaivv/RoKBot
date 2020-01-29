@@ -131,7 +131,7 @@ namespace RoKBot.Utils
                 Device.Tap(research);
                 Wait(1, 2);                
 
-                if (Helper.RandomGenerator.Next(0, 2) > 0)
+                if (Helper.RandomGenerator.Next() % 2 == 0)
                 {
                     Device.Tap(0x27, 0x96); //economy
                 }
@@ -142,14 +142,14 @@ namespace RoKBot.Utils
 
                 Wait(1, 2);
 
-                Rectangle technology;
-                while (!Device.Match("icon.technology", out technology, null, 0.95f) && !Device.Match(0x22f, 0x191, "icon.corner.research", out Rectangle corner, 0.96f))
+                Rectangle[] technologies;
+                while (!Device.Match("icon.technology", out technologies, null, 0.92f) && !Device.Match(0x22f, 0x191, "icon.corner.research", out Rectangle corner, 0.96f))
                 {
                     Device.Swipe(0x221, 0x107, 0x67, 0x107, 1000);
                     Wait(1, 2);
                 }
-
-                if (!Device.Match("icon.technology", out technology, technology, 0.95f))
+                
+                if (technologies.Length == 0)
                 {
                     Wait(0, 1);
                     Device.Tap(0x22d, 0x5f); // close
@@ -158,38 +158,42 @@ namespace RoKBot.Utils
                 }
                 else
                 {
-                    Device.Tap(technology);
-
-                    Wait(1, 2);
-                    if (Device.Tap("icon.research"))
+                    foreach (Rectangle technology in technologies)
                     {
-                        Wait(1, 2);
-                        if (Device.Match("button.getmore", out Rectangle getmore))
+                        Device.Tap(technology);
+
+                        Wait(1, 1);
+
+                        if (Device.Tap("icon.research"))
                         {
-                            Device.Tap(0x1f7, 0x82); // close getmore
-                            Wait(1, 2);
-                            Device.Tap(0x222, 0x67); // close technology popup
-                            Wait(1, 2);
+                            Wait(1, 1);
+
+                            if (Device.Match("button.getmore", out Rectangle getmore))
+                            {
+                                Device.Tap(0x1f7, 0x82); // close getmore
+                                Wait(1, 1);
+                                Device.Tap(0x222, 0x67); // close technology popup
+                                Wait(1, 1);
+                                continue;
+                            }
+
+                            Device.Tap(0x1c2, 0x83); // request help
+                            Wait(0, 1);
                             Device.Tap(0x22d, 0x5f); // close
 
-                            return false;
+                            Helper.Print("Researching");
+                            return true;
                         }
 
-                        Device.Tap(0x1c2, 0x83); // request help
-                        Wait(0, 1);
-                        Device.Tap(0x22d, 0x5f); // close
 
-                        Helper.Print("Researching");
-                        return true;
+                        Device.Tap(0x222, 0x67); // close technology popup                            
+                        Wait(1, 1);                        
                     }
-                    else
-                    {
-                        Device.Tap(0x222, 0x67); // close technology popup
-                        Wait(1, 2);
-                        Device.Tap(0x22d, 0x5f); // close
 
-                        return false;
-                    }
+                    Wait(1, 2);
+                    Device.Tap(0x22d, 0x5f); // close
+
+                    return false;
                 }
             }
             finally
@@ -1303,21 +1307,21 @@ namespace RoKBot.Utils
 
                 if (first)
                 {
-                    Device.Tap(0xba, 0x141); // max level;                
-                    Wait(0, 1);
+                    Device.Tap(0xbb, 0x141); // max level;                
+                    Wait(1, 1);
 
                     for (int i = 0; i > Current.BarbarianLevel; i--)
                     {
                         Device.Tap(0x45, 0x141); // minus
-                        Wait(0, 1);
+                        Wait(1, 1);
                     }
                     
                     Device.Tap((Rectangle)search);
+                    Wait(1, 1);
 
                     first = false;
                 }
-
-                Wait(0, 1);
+                
                 while (Device.Match("label.search", out match, search))
                 {
                     if (Device.Match(0x54, 0x141, "icon.min", out Rectangle min, 0.95f))
@@ -1328,9 +1332,9 @@ namespace RoKBot.Utils
 
                     Device.Tap(0x45, 0x141); // minus
                     Current.BarbarianLevel--;
-                    Wait(0, 1);
+                    Wait(1, 1);
                     Device.Tap((Rectangle)search); // click search
-                    Wait(0, 1);                    
+                    Wait(1, 1);                    
                 }
 
                 Wait(1, 2);
@@ -1340,7 +1344,7 @@ namespace RoKBot.Utils
 
                 if (!Device.Match("button.attack", out Rectangle attack)) continue;
 
-                while (Device.Match("button.attack", out attack, attack) && !Device.Tap(attack.X + attack.Width / 2, attack.Y + attack.Height / 2, "button.attack")) Wait(0, 1);
+                while (Device.Match("button.attack", out attack) && !Device.Tap(attack.X + attack.Width / 2, attack.Y + attack.Height / 2, "button.attack")) Wait(0, 1);
 
                 Wait(1, 2);
 
