@@ -226,19 +226,21 @@ namespace RoKBot
             }
         }
 
-        static void TapVerificationTask()
+        static DateTime DueTime = DateTime.UtcNow.AddMinutes(Helper.RandomGenerator.Next(20, 30));
+
+        static void VerificationPreventionTask()
         {
             try
             {
                 while (true)
                 {
-                    if (Device.Match("button.verify", out Rectangle verify))
+                    if (DueTime >= DateTime.UtcNow)
                     {
                         HangProtectionThread.Abort();
                         StopRoutines();
                         Routine.Wait(1, 2);
 
-                        Helper.Print("Verification protection activated", true);
+                        Helper.Print("Verification prevention activated", true);
 
                         Process[] processes = Process.GetProcessesByName("MEmu");
 
@@ -259,17 +261,19 @@ namespace RoKBot
                             Routine.Wait(10, 15);
                         }
 
-                        DateTime start = DateTime.UtcNow;
+                        DueTime = DateTime.UtcNow.AddMinutes(Helper.RandomGenerator.Next(20, 30));
 
                         do
                         {
-                            Helper.Print("Resume after " + (DateTime.UtcNow - start).TotalMinutes.ToString("0") + " minutes");
+                            Helper.Print("Resume after " + (DueTime - DateTime.UtcNow).TotalMinutes.ToString("0") + " minutes");
                             Thread.CurrentThread.Join(60000);
                         }
-                        while ((DateTime.UtcNow - start).TotalMinutes < 10);
-
+                        while (DateTime.UtcNow < DueTime);
+                        
                         HangProtectionThread = new Thread(new ThreadStart(HangProtectionTask));
                         HangProtectionThread.Start();
+
+                        DueTime = DateTime.UtcNow.AddMinutes(Helper.RandomGenerator.Next(20, 30));
                     }
 
                     Thread.CurrentThread.Join(1000);
@@ -313,7 +317,7 @@ namespace RoKBot
             Console.ReadLine();
             Helper.Print("Starting threads", true);
                         
-            Thread V = new Thread(new ThreadStart(SlideVerificationTask));                                    
+            Thread V = new Thread(new ThreadStart(VerificationPreventionTask));                                    
             HangProtectionThread = new Thread(new ThreadStart(HangProtectionTask));
             
             Device.Initialise();
