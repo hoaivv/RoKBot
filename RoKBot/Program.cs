@@ -1,4 +1,5 @@
-﻿using RoKBot.Utils;
+﻿using AForge.Imaging.Filters;
+using RoKBot.Utils;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -83,15 +84,7 @@ namespace RoKBot
             }
             catch(ThreadAbortException)
             {
-                if (Resumable)
-                {
                     Helper.Print("Routines stopped", true);
-                    Helper.Print("Press Enter to resume");
-                }
-                else
-                {
-                    Helper.Print("Routines stopped", true);
-                }
             }
         }
 
@@ -104,23 +97,24 @@ namespace RoKBot
                     Process[] processes = Process.GetProcessesByName("MEmu");
 
                     if ((DateTime.UtcNow - Device.LastInteractiveUtc).TotalMinutes > 5 || processes.Length == 0 || !Device.Ready)
-                    {                                                                        
-                        bool restartRoutines = !Paused;
-
-                        Resumable = false;
-                        Paused = true;
-
-                        if (restartRoutines)
-                        {
-                            Routine.Wait(1, 2);
-                        }                                                
+                    {
+                        StopRoutines();
 
                         Helper.Print("Hang protection activated", true);
 
                         if (processes.Length > 0)
                         {
                             Helper.Print("Stopping MEmu instances");
-                            foreach (Process process in processes) process.Kill();
+                            foreach (Process process in processes)
+                            {
+                                try
+                                {
+                                    process.Kill();
+                                }
+                                catch (Exception)
+                                {
+                                }
+                            }
 
                             Routine.Wait(10, 15);
                         }
@@ -141,19 +135,13 @@ namespace RoKBot
                             {
                                 Helper.Print("Starting RoK");
 
-                                if (restartRoutines) Paused = false;
+                                StartRountines();
 
-                                Resumable = true;
                                 break;
                             }
 
                             Routine.Wait(1, 2);
-                        }       
-                        
-                        if (!Resumable)
-                        {
-                            Helper.Print("Failed to start RoK");
-                        }
+                        }                                                       
                     }
 
                     Thread.CurrentThread.Join(1000);
@@ -161,10 +149,11 @@ namespace RoKBot
             }
             catch(ThreadAbortException)
             {
+                Helper.Print("Hang protection disabled", true);
             }
         }
 
-        static void VerificationTask()
+        static void SlideVerificationTask()
         {
             try
             {                
@@ -172,15 +161,7 @@ namespace RoKBot
                 {                    
                     if (Device.Match("button.verify", out Rectangle verify))
                     {
-                        Resumable = false;
-
-                        bool restartRountine = !Paused;
-                        
-                        if (!Paused)
-                        {
-                            Paused = true;
-                            Routine.Wait(1, 2);
-                        }
+                        StopRoutines();
 
                         Helper.Print("Verification solver activated", true);
 
@@ -221,6 +202,11 @@ namespace RoKBot
                                         Device.Tap(10, 10);
                                         Routine.Wait(1, 2);
                                     }
+                                    else
+                                    {
+                                        Helper.Print("Puzzle solved");
+                                        StartRountines();
+                                    }
                                 }
                                 else
                                 {
@@ -230,11 +216,6 @@ namespace RoKBot
                                 }
                             }
                         }
-
-                        Helper.Print("Puzzle solved");
-                        if (restartRountine) Paused = false;
-
-                        Resumable = true;
                     }
 
                     Thread.CurrentThread.Join(1000);
@@ -245,80 +226,101 @@ namespace RoKBot
             }
         }
 
-        static bool Paused = false;
-        static bool Resumable = true;
+        static void TapVerificationTask()
+        {
+            try
+            {
+                while (true)
+                {
+                    if (Device.Match("button.verify", out Rectangle verify))
+                    {
+                        HangProtectionThread.Abort();
+                        StopRoutines();
+                        Routine.Wait(1, 2);
+
+                        Helper.Print("Verification protection activated", true);
+
+                        Process[] processes = Process.GetProcessesByName("MEmu");
+
+                        if (processes.Length > 0)
+                        {
+                            Helper.Print("Stopping MEmu instances");
+                            foreach (Process process in processes)
+                            {
+                                try
+                                {
+                                    process.Kill();
+                                }
+                                catch (Exception)
+                                {
+                                }
+                            }
+
+                            Routine.Wait(10, 15);
+                        }
+
+                        DateTime start = DateTime.UtcNow;
+
+                        do
+                        {
+                            Helper.Print("Resume after " + (DateTime.UtcNow - start).TotalMinutes.ToString("0") + " minutes");
+                            Thread.CurrentThread.Join(60000);
+                        }
+                        while ((DateTime.UtcNow - start).TotalMinutes < 10);
+
+                        HangProtectionThread = new Thread(new ThreadStart(HangProtectionTask));
+                        HangProtectionThread.Start();
+                    }
+
+                    Thread.CurrentThread.Join(1000);
+                }
+            }
+            catch (ThreadAbortException)
+            {
+            }
+        }
+
+        static Thread HangProtectionThread = null;
+        static Thread RoutineInvokingThread = null;
+        static object Locker = new object();
+
+        static void StopRoutines()
+        {
+            lock (Locker)
+            {
+                if (RoutineInvokingThread?.IsAlive ?? false)
+                {
+                    RoutineInvokingThread.Abort();
+                    Routine.Wait(1, 2);
+                }
+            }
+        }
+
+        static void StartRountines()
+        {
+            lock (Locker)
+            {
+                StopRoutines();
+
+                RoutineInvokingThread = new Thread(new ThreadStart(RoutineInvokingTask));
+                RoutineInvokingThread.Start();
+            }
+        }
 
         static void Main(string[] args)
-        {                        
+        {
             Helper.Print("Press Enter to start", true);
             Console.ReadLine();
             Helper.Print("Starting threads", true);
-
-            Thread V = new Thread(new ThreadStart(VerificationTask));                        
-            Thread T = new Thread(new ThreadStart(RoutineInvokingTask));
-            Thread P = new Thread(new ThreadStart(HangProtectionTask));
-
-            bool last = Paused;
-
+                        
+            Thread V = new Thread(new ThreadStart(SlideVerificationTask));                                    
+            HangProtectionThread = new Thread(new ThreadStart(HangProtectionTask));
+            
             Device.Initialise();
 
-            P.Start();
-            T.Start();
+            StartRountines();
+            HangProtectionThread.Start();
             V.Start();
-
-            new Thread(new ThreadStart(() =>
-            {
-                try
-                {
-                    while (true)
-                    {
-                        if (last != Paused)
-                        {
-                            if (Paused)
-                            {
-                                T.Abort();                                
-                            }
-                            else
-                            {
-                                T = new Thread(new ThreadStart(RoutineInvokingTask));
-                                T.Start();
-                            }
-
-                            last = Paused;
-                        }
-
-                        Thread.CurrentThread.Join(10);
-                    }
-                }
-                catch (ThreadAbortException)
-                {
-                }
-
-            })).Start();
-
-            new Thread(new ThreadStart(() =>
-            {
-                try
-                {
-                    while (true)
-                    {
-                        Console.ReadLine();
-
-                        if (Resumable)
-                        {
-                            Paused = !Paused;
-                        }
-                        else
-                        {
-                            Helper.Print("Routines enable/disable locked. try again latter", true);
-                        }
-                    }
-                }
-                catch (ThreadAbortException)
-                {
-                }
-
-            })).Start();            
 
             while (true) Thread.CurrentThread.Join(1000);
         }
