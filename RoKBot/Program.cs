@@ -1,4 +1,5 @@
-﻿using AForge.Imaging.Filters;
+﻿using AForge.Imaging;
+using AForge.Imaging.Filters;
 using RoKBot.Utils;
 using System;
 using System.Collections.Generic;
@@ -6,7 +7,10 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
+using System.Text;
 using System.Threading;
+using System.Web.Script.Serialization;
 
 namespace RoKBot
 {
@@ -224,9 +228,7 @@ namespace RoKBot
             catch(ThreadAbortException)
             {
             }
-        }
-
-        static DateTime DueTime = DateTime.UtcNow.AddMinutes(Helper.RandomGenerator.Next(20, 30));
+        }        
 
         static void VerificationPreventionTask()
         {
@@ -234,7 +236,7 @@ namespace RoKBot
             {
                 while (true)
                 {
-                    if (DueTime >= DateTime.UtcNow)
+                    if (Device.Match("button.verify", out Rectangle verify))
                     {
                         HangProtectionThread.Abort();
                         StopRoutines();
@@ -261,19 +263,31 @@ namespace RoKBot
                             Routine.Wait(10, 15);
                         }
 
-                        DueTime = DateTime.UtcNow.AddMinutes(Helper.RandomGenerator.Next(20, 30));
+                        HttpClient client = new HttpClient(new HttpClientHandler { UseProxy = false, Proxy = null });
 
-                        do
+                        JavaScriptSerializer jss = new JavaScriptSerializer();
+
+                        HttpContent content = new StringContent(jss.Serialize(new
                         {
-                            Helper.Print("Resume after " + (DueTime - DateTime.UtcNow).TotalMinutes.ToString("0") + " minutes");
-                            Thread.CurrentThread.Join(60000);
-                        }
-                        while (DateTime.UtcNow < DueTime);
-                        
+                            receivers = new string[] { "hoai4285@gmail.com" },
+                            name = "RoK Request",
+                            content = "Verification requirement detected at " + DateTime.Now,
+                            subject = "Verification required",
+                            mail_address_name = "info"
+
+                        }), Encoding.UTF8, "application/json");
+
+                        client.PostAsync("http://api.jvjsc.com:6245/mail/send", content).ContinueWith(task =>
+                        {
+                            client.Dispose();
+                            content.Dispose();
+                        });
+
+                        Helper.Print("Waiting for user input to continue (press enter)", true);
+                        Console.ReadLine();
+
                         HangProtectionThread = new Thread(new ThreadStart(HangProtectionTask));
                         HangProtectionThread.Start();
-
-                        DueTime = DateTime.UtcNow.AddMinutes(Helper.RandomGenerator.Next(20, 30));
                     }
 
                     Thread.CurrentThread.Join(1000);
@@ -313,6 +327,32 @@ namespace RoKBot
 
         static void Main(string[] args)
         {
+
+            System.Net.ServicePointManager.Expect100Continue = false;
+            System.Net.ServicePointManager.UseNagleAlgorithm = false;
+
+            HttpClient client = new HttpClient(new HttpClientHandler { UseProxy = false, Proxy = null });
+
+            JavaScriptSerializer jss = new JavaScriptSerializer();
+
+            HttpContent content = new StringContent(jss.Serialize(new
+            {
+                receivers = new string[] { "hoai4285@gmail.com" },
+                name = "RoK Request",
+                content = "Verification requirement detected at " + DateTime.Now,
+                subject = "Verification required",
+                mail_address_name = "info"
+
+            }), Encoding.UTF8, "application/json");
+
+            client.PostAsync("http://api.jvjsc.com:6245/mail/send", content).ContinueWith(task =>
+            {
+                client.Dispose();
+                content.Dispose();
+            });
+
+
+
             Helper.Print("Press Enter to start", true);
             Console.ReadLine();
             Helper.Print("Starting threads", true);
