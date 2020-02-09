@@ -331,30 +331,6 @@ namespace RoKBot
             System.Net.ServicePointManager.Expect100Continue = false;
             System.Net.ServicePointManager.UseNagleAlgorithm = false;
 
-            HttpClient client = new HttpClient(new HttpClientHandler { UseProxy = false, Proxy = null });
-
-            JavaScriptSerializer jss = new JavaScriptSerializer();
-
-            HttpContent content = new StringContent(jss.Serialize(new
-            {
-                receivers = new string[] { "hoai4285@gmail.com" },
-                name = "RoK Request",
-                content = "Verification requirement detected at " + DateTime.Now,
-                subject = "Verification required",
-                mail_address_name = "info"
-
-            }), Encoding.UTF8, "application/json");
-
-            client.PostAsync("http://api.jvjsc.com:6245/mail/send", content).ContinueWith(task =>
-            {
-                client.Dispose();
-                content.Dispose();
-            });
-
-
-
-            Helper.Print("Press Enter to start", true);
-            Console.ReadLine();
             Helper.Print("Starting threads", true);
                         
             Thread V = new Thread(new ThreadStart(VerificationPreventionTask));                                    

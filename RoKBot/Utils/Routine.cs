@@ -101,6 +101,8 @@ namespace RoKBot.Utils
     {
         public static bool Research()
         {
+            if (Current.Get("research").TotalHours < 1) return false;
+
             try
             {
                 OpenCity();
@@ -199,6 +201,7 @@ namespace RoKBot.Utils
             finally
             {
                 OpenMap();
+                Current.Set("research");
             }
         }
     }
@@ -207,6 +210,8 @@ namespace RoKBot.Utils
     {
         public static bool ClaimDaily()
         {
+            if (Current.Get("daily").TotalHours < 12) return false;
+
             OpenMap();            
             Device.Tap(0x25d, 0xc);
 
@@ -220,6 +225,7 @@ namespace RoKBot.Utils
             }
 
             Device.Tap(0x13, 0x13); // back;
+            Current.Set("daily");
 
             return true;
         }
@@ -538,31 +544,23 @@ namespace RoKBot.Utils
         }
 
         public static bool TrainInfantry()
-        {
+        {            
             OpenCity();
             Device.Tap(0x13d, 0xb2); 
             Wait(1, 2);
 
-            if (!Device.Match("icon.infantry", out Rectangle infantry))
+            if (Device.Match("icon.speedup", out Rectangle speedup))
             {
-                if (Device.Match("icon.speedup", out Rectangle speedup))
-                {
-                    OpenMap();
-                    return false;
-                }
+                OpenMap();
+                return false;
+            }
 
+            if (!Device.Match("icon.infantry", out Rectangle infantry))
+            {                
                 OpenMap();
                 OpenCity();
                 Device.Tap(0x13d, 0xb2);
                 Wait(1, 2);
-            }
-            else
-            {
-                if (Device.Match("icon.speedup", out Rectangle speedup))
-                {
-                    OpenMap();
-                    return false;
-                }
             }
 
             if (UpgradeCurrentBuilding("barracks"))
@@ -596,27 +594,19 @@ namespace RoKBot.Utils
             Device.Tap(0x1a0, 0xf0); 
             Wait(1, 2);
 
+            if (Device.Match("icon.speedup", out Rectangle speedup))
+            {
+                OpenMap();
+                return false;
+            }
+
             if (!Device.Match("icon.archer", out Rectangle archer))
             {
-                if (Device.Match("icon.speedup", out Rectangle speedup))
-                {
-                    OpenMap();
-                    return false;
-                }
-
                 OpenMap();                
                 OpenCity();
                 Device.Tap(0x1a0, 0xf0);
                 Wait(1, 2);
-            }
-            else
-            {
-                if (Device.Match("icon.speedup", out Rectangle speedup))
-                {
-                    OpenMap();
-                    return false;
-                }
-            }
+            }            
 
             if (UpgradeCurrentBuilding("archery range"))
             {
@@ -649,26 +639,18 @@ namespace RoKBot.Utils
             Device.Tap(0x144, 0x136); 
             Wait(1, 2);
 
-            if (!Device.Match("icon.cavalry", out Rectangle cavalry))
+            if (Device.Match("icon.speedup", out Rectangle speedup))
             {
-                if (Device.Match("icon.speedup", out Rectangle speedup))
-                {
-                    OpenMap();
-                    return false;
-                }
+                OpenMap();
+                return false;
+            }
 
+            if (!Device.Match("icon.cavalry", out Rectangle cavalry))
+            {                
                 OpenMap();
                 OpenCity();
                 Device.Tap(0x144, 0x136);
                 Wait(1, 2);
-            }
-            else
-            {
-                if (Device.Match("icon.speedup", out Rectangle speedup))
-                {
-                    OpenMap();
-                    return false;
-                }
             }
 
             if (UpgradeCurrentBuilding("stable"))
@@ -702,27 +684,19 @@ namespace RoKBot.Utils
             Device.Tap(0xe7, 0xf2); 
             Wait(1, 2);
 
-            if (!Device.Match("icon.siege", out Rectangle siege))
+            if (Device.Match("icon.speedup", out Rectangle speedup))
             {
-                if (Device.Match("icon.speedup", out Rectangle speedup))
-                {
-                    OpenMap();
-                    return false;
-                }
+                OpenMap();
+                return false;
+            }
 
+            if (!Device.Match("icon.siege", out Rectangle siege))
+            {                
                 OpenMap();
                 OpenCity();
                 Device.Tap(0xe7, 0xf2);
                 Wait(1, 2);
-            }
-            else
-            {
-                if (Device.Match("icon.speedup", out Rectangle speedup))
-                {
-                    OpenMap();
-                    return false;
-                }
-            }
+            }            
 
             if (UpgradeCurrentBuilding("siege workshop"))
             {
@@ -793,6 +767,8 @@ namespace RoKBot.Utils
     {
         public static bool CollectResources()
         {
+            if (Current.Get("rss").TotalHours < 1) return false;
+
             OpenCity();
 
             if (Device.Tap(0x85, 0x109, "collect.food") || Device.Tap(0x85, 0x109, "collect.food.old")) Helper.Print("Food collected");
@@ -803,6 +779,8 @@ namespace RoKBot.Utils
             Wait(1, 2);
             if (Device.Tap(0xcd, 0x81, "collect.gold") || Device.Tap(0xcd, 0x81, "collect.gold.old")) Helper.Print("Gold collected");
             Wait(1, 2);
+
+            Current.Set("rss");
 
             return true;
         }
@@ -855,6 +833,8 @@ namespace RoKBot.Utils
     {
         public static bool ClaimCampaign()
         {
+            if (Current.Get("campaign").TotalHours < 12) return false;
+
             OpenCity();
 
             if (!Device.Tap(0x19e, 0x1c6, "button.campaign"))
@@ -876,6 +856,8 @@ namespace RoKBot.Utils
             Wait(2, 3);
             Device.Tap(0x13, 0x13);
             Wait(2, 3);
+
+            Current.Set("campaign");
 
             return true;
         }
@@ -916,78 +898,93 @@ namespace RoKBot.Utils
 
                 // COLLECT TERRITORY RESOURCES
 
-                Wait(2, 3);
-                Device.Tap(0x1b8, 0x109); // territory icon in alliance menu
-                Wait(2, 3);
-                Device.Tap(0x1f3, 0x7f); // claim button in territory menu
-                Wait(2, 3);
-                Device.Tap(0x22e, 0x51); // close button in territory menu
+                if (Current.Get("territory").TotalMinutes > 30)
+                {
+                    Wait(2, 3);
+                    Device.Tap(0x1b8, 0x109); // territory icon in alliance menu
+                    Wait(2, 3);
+                    Device.Tap(0x1f3, 0x7f); // claim button in territory menu
+                    Wait(2, 3);
+                    Device.Tap(0x22e, 0x51); // close button in territory menu
+                    Current.Set("territory");
+                }
 
                 // COLLECT GIFTS
 
-                bool hasGift = false;
-
-                Wait(2, 3);
-                Device.Tap(0x1b9, 0x156); // gift icon in alliance menu
-                Wait(2, 3);
-                Device.Tap(0x153, 0xa3); // normal tab in gift menu
-                Wait(2, 3);
-                Device.Tap(0x22a, 0xa0); // claim all icon
-                Wait(2, 3);
-                hasGift |= Device.Tap(0x143, 0x143, "button.confirm");
-                Wait(2, 3);
-                Device.Tap(0x1d3, 0xa3); // rare tab in gift menu
-
-                Wait(2, 3);
-                if (Device.Tap(0x1e7, 0xc9, "button.claim.gift"))
+                if (Current.Get("gifts").TotalHours > 1)
                 {
-                    hasGift = true;
+                    bool hasGift = false;
 
-                    do
+                    Wait(2, 3);
+                    Device.Tap(0x1b9, 0x156); // gift icon in alliance menu
+                    Wait(2, 3);
+                    Device.Tap(0x153, 0xa3); // normal tab in gift menu
+                    Wait(2, 3);
+                    Device.Tap(0x22a, 0xa0); // claim all icon
+                    Wait(2, 3);
+                    hasGift |= Device.Tap(0x143, 0x143, "button.confirm");
+                    Wait(2, 3);
+                    Device.Tap(0x1d3, 0xa3); // rare tab in gift menu
+
+                    Wait(2, 3);
+                    if (Device.Tap(0x1e7, 0xc9, "button.claim.gift"))
                     {
-                        Wait(2, 3);
+                        hasGift = true;
+
+                        do
+                        {
+                            Wait(2, 3);
+                        }
+                        while (Device.Tap(0x1e7, 0xfa, "button.claim.gift"));
                     }
-                    while (Device.Tap(0x1e7, 0xfa, "button.claim.gift"));
+
+                    Wait(2, 3);
+                    Device.Tap(0xb2, 0x10c); // collect big chest
+                    Wait(2, 3);
+                    Device.Tap(0xb2, 0x10c); // collect big chest
+
+                    Wait(2, 3);
+                    Device.Tap(0x22d, 0x51); // close button of gift menu
+
+                    if (hasGift) Helper.Print("Gifts claimed");
+                    Current.Set("gifts");
                 }
-
-                Wait(2, 3);
-                Device.Tap(0xb2, 0x10c); // collect big chest
-                Wait(2, 3);
-                Device.Tap(0xb2, 0x10c); // collect big chest
-
-                Wait(2, 3);
-                Device.Tap(0x22d, 0x51); // close button of gift menu
-
-                if (hasGift) Helper.Print("Gifts claimed");
 
                 // DONATE                
 
-                Wait(2, 3);
-                Device.Tap(0x17a, 0x151); // technology icon in alliance menu
-                Wait(10, 11);
-
-                if (Device.Match("label.recommendation", out Rectangle recommendation))
+                if (Current.Get("donate").TotalMinutes > 20)
                 {
-                    Device.Tap(recommendation.X, recommendation.Y + 30);
-                    bool donationMade = false;
                     Wait(2, 3);
+                    Device.Tap(0x17a, 0x151); // technology icon in alliance menu
+                    Wait(10, 11);
 
-                    while (Device.Tap(0x1e6, 0x14f, "button.donate"))
+                    if (Device.Match("label.recommendation", out Rectangle recommendation))
                     {
-                        donationMade = true;
-                        Wait(1, 2);
-                    }
+                        Device.Tap(recommendation.X, recommendation.Y + 30);
+                        bool donationMade = false;
+                        Wait(2, 3);
 
-                    Wait(2, 3);
-                    Device.Tap(0x221, 0x65); // close button of donate menu
-                    Wait(2, 3);
-                    Device.Tap(0x22d, 0x5f); // close button of technology menu
-                   
-                    if (donationMade) Helper.Print("Donated");
-                }
-                else
-                {
-                    Device.Tap(0x22d, 0x5f); // close button of technology menu
+                        while (Device.Tap(0x1e6, 0x14f, "button.donate"))
+                        {
+                            donationMade = true;
+                            Wait(1, 2);
+                        }
+
+                        Wait(2, 3);
+                        Device.Tap(0x221, 0x65); // close button of donate menu
+                        Wait(2, 3);
+                        Device.Tap(0x22d, 0x5f); // close button of technology menu
+
+                        if (donationMade)
+                        {
+                            Helper.Print("Donated");
+                            Current.Set("donate");
+                        }
+                    }
+                    else
+                    {
+                        Device.Tap(0x22d, 0x5f); // close button of technology menu
+                    }
                 }
             }
 
@@ -1002,6 +999,8 @@ namespace RoKBot.Utils
     {
         public static bool ClaimQuests()
         {
+            if (Current.Get("quests").TotalHours < 1) return false;
+
             OpenCity();            
 
             Wait(2, 3);
@@ -1051,6 +1050,8 @@ namespace RoKBot.Utils
                 Device.Tap(0x222, 0x67); // close button of quest menu
 
                 if (questClaimed) Helper.Print("Quests claimed");
+
+                Current.Set("quests");
                 return true;
             }
 
@@ -1175,6 +1176,8 @@ namespace RoKBot.Utils
     {
         public static bool ClaimVIP()
         {
+            if (Current.Get("vip").TotalHours < 12) return false;
+
             OpenRandom();
 
             Device.Tap(0x4b, 0x1e, 0); // open VIP menu
@@ -1189,6 +1192,8 @@ namespace RoKBot.Utils
             Wait(2, 3);
             Device.Tap(0x221, 0x65); // close
             Wait(2, 3);
+
+            Current.Set("vip");
 
             return true;
         }
@@ -1490,6 +1495,18 @@ namespace RoKBot.Utils
             public Point Position { get; set; }
             public Queue<string> GatheringOrder { get; private set; } = new Queue<string>(new string[] { "F", "W", "S", "G" });
             public int BarbarianLevel = 0;
+
+            private Dictionary<string, DateTime> _Actions = new Dictionary<string, DateTime>();
+
+            public TimeSpan Get(string action)
+            {
+                return DateTime.UtcNow - (_Actions.ContainsKey(action) ? _Actions[action] : DateTime.MinValue);
+            }
+
+            public void Set(string action)
+            {
+                _Actions[action] = DateTime.UtcNow;
+            }
         }
 
         private static Queue<AccountData> Accounts = new Queue<AccountData>();

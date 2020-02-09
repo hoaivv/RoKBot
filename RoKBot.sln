@@ -5,6 +5,8 @@ VisualStudioVersion = 15.0.27428.2037
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RoKBot", "RoKBot\RoKBot.csproj", "{7910D628-E938-41AD-BEE9-908E5C4043C7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GoogleApiTest", "GoogleApiTest\GoogleApiTest.csproj", "{D1D16071-DE40-4593-900A-48689BF06F26}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{7910D628-E938-41AD-BEE9-908E5C4043C7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7910D628-E938-41AD-BEE9-908E5C4043C7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7910D628-E938-41AD-BEE9-908E5C4043C7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D1D16071-DE40-4593-900A-48689BF06F26}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D1D16071-DE40-4593-900A-48689BF06F26}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D1D16071-DE40-4593-900A-48689BF06F26}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D1D16071-DE40-4593-900A-48689BF06F26}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
