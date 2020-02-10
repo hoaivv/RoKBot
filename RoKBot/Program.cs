@@ -43,6 +43,8 @@ namespace RoKBot
             Routine.Research
         });
 
+        static DateTime RoutineStart = DateTime.UtcNow;
+
         static void RoutineInvokingTask()
         {
             try
@@ -75,11 +77,13 @@ namespace RoKBot
                             continue;
                         }
 
+                        RoutineStart = DateTime.UtcNow;
                         Helper.Print("Running " + routine.Method.Name, true);
                         routine();
                         CommittingRoutines.Dequeue();
                     }
-                    
+
+                    RoutineStart = DateTime.UtcNow;
                     Helper.Print("Running SwitchCharacter", true);                    
                     Routine.SwitchCharacter();
                     Routine.Wait(10, 15);
@@ -100,7 +104,7 @@ namespace RoKBot
                 {
                     Process[] processes = Process.GetProcessesByName("MEmu");
 
-                    if ((DateTime.UtcNow - Device.LastInteractiveUtc).TotalMinutes > 5 || processes.Length == 0 || !Device.Ready)
+                    if ((DateTime.UtcNow - Device.LastInteractiveUtc).TotalMinutes > 5 || (DateTime.UtcNow - RoutineStart).TotalMinutes > 10 || processes.Length == 0 || !Device.Ready)
                     {
                         StopRoutines();
 
