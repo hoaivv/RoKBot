@@ -287,7 +287,7 @@ namespace RoKBot
                             content.Dispose();
                         });
 
-                        Helper.Print("Waiting for user intervention for 5 mins", true);
+                        Helper.Print("Waiting 5 minutes for user intervention", true);
                         Routine.Wait(300, 301);
 
                         HangProtectionThread = new Thread(new ThreadStart(HangProtectionTask));
