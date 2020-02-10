@@ -287,8 +287,8 @@ namespace RoKBot
                             content.Dispose();
                         });
 
-                        Helper.Print("Waiting for user input to continue (press enter)", true);
-                        Console.ReadLine();
+                        Helper.Print("Waiting for user intervention for 5 mins", true);
+                        Routine.Wait(300, 301);
 
                         HangProtectionThread = new Thread(new ThreadStart(HangProtectionTask));
                         HangProtectionThread.Start();
