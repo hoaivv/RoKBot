@@ -143,6 +143,7 @@ namespace RoKBot
                             {
                                 Helper.Print("Starting RoK");
 
+                                RoutineStart = DateTime.UtcNow;
                                 StartRountines();
 
                                 break;
