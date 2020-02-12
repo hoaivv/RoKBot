@@ -11,6 +11,8 @@ namespace RoKBot.Utils
     static class Helper
     {
         public const string MEmuPath = @"D:\Program Files\Microvirt\MEmu";
+        public const string BlueStacksPath = @"C:\ProgramData\BlueStacks\Client\Bluestacks.exe";
+        public const string AdbPath = @"C:\Program Files (x86)\Android\android-sdk\platform-tools\adb.exe";
 
         public static Random RandomGenerator = new Random((int)DateTime.UtcNow.Ticks);
 

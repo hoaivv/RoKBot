@@ -19,7 +19,7 @@ namespace RoKBot.Utils
 
         static Device()
         {
-            server.StartServer(Path.Combine(Helper.MEmuPath, "adb.exe"), restartServerIfNewer: false);
+            server.StartServer(Helper.AdbPath, restartServerIfNewer: false);
         }
 
         public static void Initialise()
@@ -35,7 +35,7 @@ namespace RoKBot.Utils
 
         public static void Run(string package)
         {
-            Shell("monkey -p " + package);
+            Shell("monkey -p " + package + " -v 500");
         }
 
         public static void Kill(string package)
@@ -172,15 +172,12 @@ namespace RoKBot.Utils
 
         public static void Tap(int x, int y, int epsilon = 0)
         {
-            using (Bitmap screen = Screen)
-            {
-                x += Helper.RandomGenerator.Next(-epsilon / 2, epsilon / 2 + 1);
-                y += Helper.RandomGenerator.Next(-epsilon / 2, epsilon / 2 + 1);
+            x += Helper.RandomGenerator.Next(-epsilon / 2, epsilon / 2 + 1);
+            y += Helper.RandomGenerator.Next(-epsilon / 2, epsilon / 2 + 1);
 
-                Shell("input tap " + x + " " + y);
+            Shell("input tap " + x + " " + y);
 
-                LastInteractiveUtc = DateTime.UtcNow;
-            }
+            LastInteractiveUtc = DateTime.UtcNow;
         }
 
         public static void Tap(Rectangle bounds, int epsilon = 0)

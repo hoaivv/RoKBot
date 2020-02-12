@@ -11,6 +11,9 @@ using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Web.Script.Serialization;
+using Shark.Runtime;
+using System.Drawing.Imaging;
+using SharpAdbClient;
 
 namespace RoKBot
 {
@@ -268,6 +271,21 @@ namespace RoKBot
                             Routine.Wait(10, 15);
                         }
 
+                        Helper.Print("Starting BlueStacks");
+                        Process.Start(Helper.BlueStacksPath);
+
+                        new AdbServer().StartServer(Helper.AdbPath, restartServerIfNewer: true);
+
+                        Helper.Print("Restarting adb connection");
+                        
+                        while (!Device.Ready)
+                        {
+                            Device.Initialise();
+                            Routine.Wait(1, 2);
+                        }
+
+                        Device.Run("com.lilithgame.roc.gp");
+
                         HttpClient client = new HttpClient(new HttpClientHandler { UseProxy = false, Proxy = null });
 
                         JavaScriptSerializer jss = new JavaScriptSerializer();
@@ -288,8 +306,11 @@ namespace RoKBot
                             content.Dispose();
                         });
 
-                        Helper.Print("Waiting 5 minutes for user intervention", true);
-                        Routine.Wait(300, 301);
+                        Helper.Print("Waiting for user intervention", true);
+
+                        while (Process.GetProcessesByName("Bluestacks").Length > 0 || Process.GetProcessesByName("HD-Player").Length > 0 || Process.GetProcessesByName("HD-Agent").Length > 0) Routine.Wait(1, 2);
+                                                
+                        new AdbServer().StartServer(Helper.AdbPath, restartServerIfNewer: true);
 
                         HangProtectionThread = new Thread(new ThreadStart(HangProtectionTask));
                         HangProtectionThread.Start();
@@ -330,9 +351,77 @@ namespace RoKBot
             }
         }
 
+        static void MessengerListener()
+        {
+            MessengerClient.DataPullDelay = 100;
+            DateTime lastscreen = DateTime.UtcNow.AddMilliseconds(-500);
+
+            using (MessengerClient client = MessengerClient.Create("api.ahacafe.vn", "HVV RoK Bot"))
+            {
+                client.DataReceived += data =>
+                {
+                    switch (data.Type)
+                    {
+                        case "pull":
+
+                            if ((DateTime.UtcNow - lastscreen).TotalMilliseconds < 300) break;
+
+                            using (Bitmap screen = Device.Screen)
+                            {
+                                if (screen == null) break;
+
+                                using (MemoryStream ms = new MemoryStream())
+                                {
+                                    screen.Save(ms, ImageFormat.Jpeg);
+                                    client.PushAsync(data.SenderPushKey, "image/jpeg", ms.ToArray());
+                                    lastscreen = DateTime.UtcNow;
+                                }
+                            }
+
+                            break;
+
+                        case "push":
+
+                            string[] cmds = Encoding.UTF8.GetString(data.Data).Split(' ');
+
+                            if (cmds.Length == 3 && int.TryParse(cmds[1], out int x) && int.TryParse(cmds[2], out int y))
+                            {
+                                switch (cmds[0])
+                                {
+                                    case "tap": Device.Tap(x, y); break;
+                                    case "press": Device.Press(x, y); break;
+                                    case "move": Device.Move(x, y); break;
+                                    case "release": Device.Release(); break;
+                                }
+                            }
+
+                            break;
+
+                        case "kill":
+
+                            try
+                            {
+                                foreach (Process process in Process.GetProcessesByName("Bluestacks")) process.Kill();
+                                foreach (Process process in Process.GetProcessesByName("HD-Player")) process.Kill();
+                                foreach (Process process in Process.GetProcessesByName("HD-Agent")) process.Kill();
+                                foreach (Process process in Process.GetProcessesByName("MEmu")) process.Kill();
+                            }
+                            catch(Exception e)
+                            {
+
+                            }
+
+                            break;
+                    }
+                };
+
+                while (true) Thread.CurrentThread.Join(1000);
+            }
+        }
+
+
         static void Main(string[] args)
         {
-
             System.Net.ServicePointManager.Expect100Continue = false;
             System.Net.ServicePointManager.UseNagleAlgorithm = false;
 
@@ -346,6 +435,9 @@ namespace RoKBot
             StartRountines();
             HangProtectionThread.Start();
             V.Start();
+
+            Thread M = new Thread(new ThreadStart(MessengerListener));
+            M.Start();
 
             while (true) Thread.CurrentThread.Join(1000);
         }
