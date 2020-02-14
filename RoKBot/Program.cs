@@ -14,6 +14,7 @@ using System.Web.Script.Serialization;
 using Shark.Runtime;
 using System.Drawing.Imaging;
 using SharpAdbClient;
+using Shark.Messenger;
 
 namespace RoKBot
 {
@@ -294,7 +295,7 @@ namespace RoKBot
                         {
                             receivers = new string[] { "hoai4285@gmail.com" },
                             name = "RoK Request",
-                            content = "Verification requirement detected at " + DateTime.Now,
+                            content = "<p>Verification requirement detected at " + DateTime.Now+"</p><a href=\"http://api.ahacafe.vn/rok.html\">Solve it now</a>",
                             subject = "Verification required",
                             mail_address_name = "info"
 
@@ -353,36 +354,42 @@ namespace RoKBot
 
         static void MessengerListener()
         {
-            MessengerClient.DataPullDelay = 100;
-            DateTime lastscreen = DateTime.UtcNow.AddMilliseconds(-500);
-
-            using (MessengerClient client = MessengerClient.Create("api.ahacafe.vn", "HVV RoK Bot"))
+            using (MessengerClient client = new MessengerClient("api.ahacafe.vn", 500))
             {
-                client.DataReceived += data =>
+                client.Register("HVV RoK Bot");
+
+                IMessengerTarget screento = null;
+
+                Parallel.Start(state =>
                 {
-                    switch (data.Type)
+                    if (screento != null)
                     {
-                        case "pull":
+                        using (Bitmap screen = Device.Screen)
+                        {
+                            if (screen == null) return;
 
-                            if ((DateTime.UtcNow - lastscreen).TotalMilliseconds < 300) break;
-
-                            using (Bitmap screen = Device.Screen)
+                            using (MemoryStream ms = new MemoryStream())
                             {
-                                if (screen == null) break;
-
-                                using (MemoryStream ms = new MemoryStream())
-                                {
-                                    screen.Save(ms, ImageFormat.Jpeg);
-                                    client.PushAsync(data.SenderPushKey, "image/jpeg", ms.ToArray());
-                                    lastscreen = DateTime.UtcNow;
-                                }
+                                screen.Save(ms, ImageFormat.Jpeg);
+                                client.PushAsync(screento, "image/jpeg", Convert.ToBase64String(ms.ToArray()));
                             }
+                        }
 
-                            break;
+                        screento = null;
+                    }
+
+                    Thread.CurrentThread.Join(300);
+                }, null, true);
+
+                client.OnData += pkg =>
+                {
+                    switch (pkg.Type)
+                    {
+                        case "pull": screento = pkg; break;
 
                         case "push":
 
-                            string[] cmds = Encoding.UTF8.GetString(data.Data).Split(' ');
+                            string[] cmds = Encoding.UTF8.GetString(pkg.Data).Split(' ');
 
                             if (cmds.Length == 3 && int.TryParse(cmds[1], out int x) && int.TryParse(cmds[2], out int y))
                             {
