@@ -252,41 +252,7 @@ namespace RoKBot
                         Routine.Wait(1, 2);
 
                         Helper.Print("Verification prevention activated", true);
-
-                        Process[] processes = Process.GetProcessesByName("MEmu");
-
-                        if (processes.Length > 0)
-                        {
-                            Helper.Print("Stopping MEmu instances");
-                            foreach (Process process in processes)
-                            {
-                                try
-                                {
-                                    process.Kill();
-                                }
-                                catch (Exception)
-                                {
-                                }
-                            }
-
-                            Routine.Wait(10, 15);
-                        }
-
-                        Helper.Print("Starting BlueStacks");
-                        Process.Start(Helper.BlueStacksPath);
-
-                        new AdbServer().StartServer(Helper.AdbPath, restartServerIfNewer: true);
-
-                        Helper.Print("Restarting adb connection");
                         
-                        while (!Device.Ready)
-                        {
-                            Device.Initialise();
-                            Routine.Wait(1, 2);
-                        }
-
-                        Device.Run("com.lilithgame.roc.gp");
-
                         HttpClient client = new HttpClient(new HttpClientHandler { UseProxy = false, Proxy = null });
 
                         JavaScriptSerializer jss = new JavaScriptSerializer();
@@ -309,10 +275,8 @@ namespace RoKBot
 
                         Helper.Print("Waiting for user intervention", true);
 
-                        while (Process.GetProcessesByName("Bluestacks").Length > 0 || Process.GetProcessesByName("HD-Player").Length > 0 || Process.GetProcessesByName("HD-Agent").Length > 0) Routine.Wait(1, 2);
-                                                
-                        new AdbServer().StartServer(Helper.AdbPath, restartServerIfNewer: true);
-
+                        while (Process.GetProcessesByName("MEmu").Length > 0) Routine.Wait(1, 2);
+                                                                        
                         HangProtectionThread = new Thread(new ThreadStart(HangProtectionTask));
                         HangProtectionThread.Start();
                     }
@@ -354,15 +318,15 @@ namespace RoKBot
 
         static void MessengerListener()
         {
-            using (MessengerClient client = new MessengerClient("api.ahacafe.vn", 500))
+            using (MessengerClient client = new MessengerClient("api.ahacafe.vn", 100))
             {
                 client.Register("HVV RoK Bot");
 
-                IMessengerTarget screento = null;
+                DateTime lastScreenRequest = DateTime.UtcNow;
 
                 Parallel.Start(state =>
                 {
-                    if (screento != null)
+                    if ((DateTime.UtcNow - lastScreenRequest).TotalSeconds < 10)
                     {
                         using (Bitmap screen = Device.Screen)
                         {
@@ -371,25 +335,24 @@ namespace RoKBot
                             using (MemoryStream ms = new MemoryStream())
                             {
                                 screen.Save(ms, ImageFormat.Jpeg);
-                                client.PushAsync(screento, "image/jpeg", Convert.ToBase64String(ms.ToArray()));
+                                client.Pusblish("screen", Convert.ToBase64String(ms.ToArray()));
                             }
                         }
-
-                        screento = null;
                     }
 
-                    Thread.CurrentThread.Join(300);
+                    Thread.CurrentThread.Join(100);
+
                 }, null, true);
 
                 client.OnData += pkg =>
                 {
                     switch (pkg.Type)
                     {
-                        case "pull": screento = pkg; break;
+                        case "pull": lastScreenRequest = DateTime.UtcNow; break;
 
                         case "push":
 
-                            string[] cmds = Encoding.UTF8.GetString(pkg.Data).Split(' ');
+                            string[] cmds = pkg.Data.Split(' ');
 
                             if (cmds.Length == 3 && int.TryParse(cmds[1], out int x) && int.TryParse(cmds[2], out int y))
                             {
@@ -408,9 +371,6 @@ namespace RoKBot
 
                             try
                             {
-                                foreach (Process process in Process.GetProcessesByName("Bluestacks")) process.Kill();
-                                foreach (Process process in Process.GetProcessesByName("HD-Player")) process.Kill();
-                                foreach (Process process in Process.GetProcessesByName("HD-Agent")) process.Kill();
                                 foreach (Process process in Process.GetProcessesByName("MEmu")) process.Kill();
                             }
                             catch(Exception e)

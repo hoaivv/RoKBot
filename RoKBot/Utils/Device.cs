@@ -19,7 +19,7 @@ namespace RoKBot.Utils
 
         static Device()
         {
-            server.StartServer(Helper.AdbPath, restartServerIfNewer: false);
+            server.StartServer(Path.Combine(Helper.MEmuPath, "adb.exe"), restartServerIfNewer: false);
         }
 
         public static void Initialise()
