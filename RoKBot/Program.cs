@@ -275,7 +275,7 @@ namespace RoKBot
 
                         Helper.Print("Waiting for user intervention", true);
 
-                        while (Process.GetProcessesByName("MEmu").Length > 0) Routine.Wait(1, 2);
+                        while (Process.GetProcessesByName("MEmu").Length > 0 && !Routine.IsReady) Routine.Wait(1, 2);
                                                                         
                         HangProtectionThread = new Thread(new ThreadStart(HangProtectionTask));
                         HangProtectionThread.Start();
@@ -318,6 +318,10 @@ namespace RoKBot
 
         static void MessengerListener()
         {
+            ImageCodecInfo encoder = ImageCodecInfo.GetImageEncoders().First(i => i.FormatID == ImageFormat.Jpeg.Guid);
+            EncoderParameters parameters = new EncoderParameters(1);
+            parameters.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, 30L);
+
             using (MessengerClient client = new MessengerClient("api.ahacafe.vn", 100))
             {
                 client.Register("HVV RoK Bot");
@@ -334,13 +338,14 @@ namespace RoKBot
 
                             using (MemoryStream ms = new MemoryStream())
                             {
-                                screen.Save(ms, ImageFormat.Jpeg);
+
+                                screen.Save(ms, encoder, parameters);
                                 client.Pusblish("screen", Convert.ToBase64String(ms.ToArray()));
                             }
                         }
                     }
 
-                    Thread.CurrentThread.Join(100);
+                    Thread.CurrentThread.Join(20);
 
                 }, null, true);
 

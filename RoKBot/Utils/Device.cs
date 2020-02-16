@@ -71,9 +71,9 @@ namespace RoKBot.Utils
                             }
                         }
                     }
-                    catch (Exception)
+                    catch (Exception e)
                     {
-                        device = null;
+                        if (!(e is ThreadAbortException)) device = null;
                         return null;
                     }
                 }
@@ -92,9 +92,9 @@ namespace RoKBot.Utils
                     AdbClient.Instance.ExecuteRemoteCommand(string.Join(";", cmds), device, receiver);
                     return receiver.ToString();
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
-                    device = null;
+                    if (!(e is ThreadAbortException)) device = null;
                     return null;
                 }
             }
