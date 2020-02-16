@@ -334,7 +334,11 @@ namespace RoKBot
                     {
                         using (Bitmap screen = Device.Screen)
                         {
-                            if (screen == null) return;
+                            if (screen == null)
+                            {
+                                client.Delete("screen");
+                                return;
+                            }
 
                             using (MemoryStream ms = new MemoryStream())
                             {
