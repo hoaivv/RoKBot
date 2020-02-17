@@ -258,7 +258,9 @@ namespace RoKBot
 
                 DateTime lastScreenRequest = DateTime.UtcNow;
 
-                Parallel.Start(state =>
+                Action publishScreen = null;                    
+                
+                publishScreen = () =>
                 {
                     if ((DateTime.UtcNow - lastScreenRequest).TotalSeconds < 10)
                     {
@@ -273,14 +275,15 @@ namespace RoKBot
                             using (MemoryStream ms = new MemoryStream())
                             {
                                 screen.Save(ms, encoder, parameters);
-                                client.Pusblish("screen", Convert.ToBase64String(ms.ToArray()));
+                                client.Pusblish("screen", Convert.ToBase64String(ms.ToArray())).ContinueWith(result => Parallel.Queue(publishScreen));
                             }
                         }
                     }
-
-                    Thread.CurrentThread.Join(20);
-
-                }, null, true);
+                    else
+                    {
+                        Parallel.Queue(publishScreen, DateTime.UtcNow.AddMilliseconds(100));
+                    }
+                };                
 
                 client.ChannelTerminated += () => MessengerRegister(client);
                 
