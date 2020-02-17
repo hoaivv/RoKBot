@@ -136,11 +136,9 @@ namespace RoKBot
 
                         DateTime start = DateTime.UtcNow;
 
-                        while (true)
+                        while ((DateTime.UtcNow - start).TotalMinutes < 5)
                         {
                             Device.Initialise();
-
-                            using (Bitmap screen = Device.Screen) if (screen != null) break;
 
                             if (Device.Tap("icon.rok"))
                             {
@@ -151,8 +149,6 @@ namespace RoKBot
 
                                 break;
                             }
-
-                            Routine.Wait(1, 2);
                         }
                     }
 
