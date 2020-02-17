@@ -1215,7 +1215,7 @@ namespace RoKBot.Utils
                 Device.Tap(0x1fc, 0x143);
                 Wait(2, 3);
 
-                if (!Device.Tap("icon.upgrade"))
+                if (!Device.Tap("button.upgrade"))
                 {
                     while (Device.Match("button.go", out Rectangle go, null, 0.95f))
                     {
