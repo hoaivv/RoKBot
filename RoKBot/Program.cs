@@ -268,7 +268,8 @@ namespace RoKBot
                         {
                             if (screen == null)
                             {
-                                client.Delete("screen");
+                                client.Delete("screen").ContinueWith(result => Parallel.Queue(publishScreen, DateTime.UtcNow.AddMilliseconds(100)));
+                                Parallel.Queue(publishScreen, DateTime.UtcNow.AddMilliseconds(100));
                                 return;
                             }
 
@@ -283,7 +284,9 @@ namespace RoKBot
                     {
                         Parallel.Queue(publishScreen, DateTime.UtcNow.AddMilliseconds(100));
                     }
-                };                
+                };
+
+                publishScreen();
 
                 client.ChannelTerminated += () => MessengerRegister(client);
                 
