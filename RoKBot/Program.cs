@@ -105,7 +105,7 @@ namespace RoKBot
                 {
                     Process[] processes = Process.GetProcessesByName("MEmu");
 
-                    if ((DateTime.UtcNow - Device.ScreenStamp).TotalSeconds > 5 || (DateTime.UtcNow - RoutineStart).TotalMinutes > 10 || processes.Length == 0)
+                    if ((DateTime.UtcNow - Device.ScreenStamp).TotalSeconds > 5 || (DateTime.UtcNow - RoutineStart).TotalMinutes > 15 || processes.Length == 0)
                     {
                         StopRoutines();
 
@@ -141,7 +141,7 @@ namespace RoKBot
                             Device.Initialise();
 
                             if (Device.Tap("icon.rok"))
-                            {
+                            {                                
                                 Helper.Print("Starting RoK");
 
                                 RoutineStart = DateTime.UtcNow;
@@ -149,6 +149,8 @@ namespace RoKBot
 
                                 break;
                             }
+
+                            Routine.Wait(1, 2);
                         }
                     }
 
@@ -199,6 +201,7 @@ namespace RoKBot
 
                         while (Process.GetProcessesByName("MEmu").Length > 0 && !Routine.Ready) Routine.Wait(1, 2);
 
+                        RoutineStart = DateTime.UtcNow;
                         HangProtectionThread = new Thread(new ThreadStart(HangProtectionTask));
                         HangProtectionThread.Start();
                     }
@@ -258,35 +261,34 @@ namespace RoKBot
 
                 DateTime lastScreenRequest = DateTime.UtcNow;
 
-                Action publishScreen = null;                    
-                
-                publishScreen = () =>
+                Parallel.Start(() =>
                 {
-                    if ((DateTime.UtcNow - lastScreenRequest).TotalSeconds < 10)
+                    while (true)
                     {
-                        using (Bitmap screen = Device.Screen)
-                        {
-                            if (screen == null)
-                            {
-                                client.Delete("screen").ContinueWith(result => Parallel.Queue(publishScreen, DateTime.UtcNow.AddMilliseconds(100)));
-                                Parallel.Queue(publishScreen, DateTime.UtcNow.AddMilliseconds(100));
-                                return;
-                            }
+                        DateTime start = DateTime.UtcNow;
 
-                            using (MemoryStream ms = new MemoryStream())
+                        if ((DateTime.UtcNow - lastScreenRequest).TotalSeconds < 10)
+                        {                            
+                            using (Bitmap screen = Device.Screen)
                             {
-                                screen.Save(ms, encoder, parameters);
-                                client.Pusblish("screen", Convert.ToBase64String(ms.ToArray())).ContinueWith(result => Parallel.Queue(publishScreen));
+                                if (screen == null)
+                                {
+                                    client.Delete("screen").Wait();
+                                }
+                                else
+                                {
+                                    using (MemoryStream ms = new MemoryStream())
+                                    {
+                                        screen.Save(ms, encoder, parameters);
+                                        client.Pusblish("screen", Convert.ToBase64String(ms.ToArray())).Wait();
+                                    }
+                                }
                             }
                         }
-                    }
-                    else
-                    {
-                        Parallel.Queue(publishScreen, DateTime.UtcNow.AddMilliseconds(100));
-                    }
-                };
 
-                publishScreen();
+                        Thread.CurrentThread.Join(Math.Max(1, 40 - (int)(DateTime.UtcNow - start).TotalMilliseconds));
+                    }
+                });
 
                 client.ChannelTerminated += () => MessengerRegister(client);
                 
@@ -335,6 +337,7 @@ namespace RoKBot
 
         static void Main(string[] args)
         {
+            
             System.Net.ServicePointManager.Expect100Continue = false;
             System.Net.ServicePointManager.UseNagleAlgorithm = false;
 
@@ -342,13 +345,13 @@ namespace RoKBot
 
             Thread V = new Thread(new ThreadStart(VerificationModeTask));
             HangProtectionThread = new Thread(new ThreadStart(HangProtectionTask));
-
+            
             Device.Initialise();
 
             StartRountines();
             HangProtectionThread.Start();
             V.Start();
-
+            
             Thread M = new Thread(new ThreadStart(MessengerListener));
             M.Start();
 

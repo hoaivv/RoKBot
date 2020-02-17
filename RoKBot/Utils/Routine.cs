@@ -1206,7 +1206,7 @@ namespace RoKBot.Utils
             OpenCity();
 
             Device.Tap(0x197, 0x2e);
-            Wait(1, 2);            
+            Wait(1, 1);            
 
             try
             {
@@ -1215,7 +1215,7 @@ namespace RoKBot.Utils
                 Device.Tap(0x1fc, 0x143);
                 Wait(2, 3);
 
-                if (!Device.Tap("button.upgrade"))
+                if (!Device.Tap(0x1eb, 0x14a, "button.upgrade"))
                 {
                     while (Device.Match("button.go", out Rectangle go, null, 0.95f))
                     {
