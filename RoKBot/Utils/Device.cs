@@ -123,8 +123,15 @@ namespace RoKBot.Utils
         {
             lock (_Server)
             {
-                _Device = AdbClient.Instance.GetDevices().FirstOrDefault(i => i.State == DeviceState.Online);
-                ScreenStamp = DateTime.UtcNow;
+                try
+                {
+                    _Device = AdbClient.Instance.GetDevices().FirstOrDefault(i => i.State == DeviceState.Online);
+                    ScreenStamp = DateTime.UtcNow;
+                }
+                catch(Exception)
+                {
+                    _Device = null;
+                }
             }
         }
 
