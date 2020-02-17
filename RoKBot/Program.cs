@@ -61,8 +61,8 @@ namespace RoKBot
                 Routine.Initialise();
 
                 while (true)
-                {                    
-                    while (!Routine.IsReady) Routine.Wait(1, 2);
+                {
+                    while (!Routine.Ready) Routine.Wait(1, 2);
 
                     if (CommittingRoutines.Count == 0)
                     {
@@ -70,8 +70,8 @@ namespace RoKBot
 
                         foreach (Func<bool> routine in Routines.OrderBy(i => random.Next()).ToArray()) CommittingRoutines.Enqueue(routine);
                     }
-                                        
-                    while(CommittingRoutines.Count > 0)
+
+                    while (CommittingRoutines.Count > 0)
                     {
                         Func<bool> routine = CommittingRoutines.Peek();
 
@@ -88,15 +88,15 @@ namespace RoKBot
                     }
 
                     RoutineStart = DateTime.UtcNow;
-                    Helper.Print("Running SwitchCharacter", true);                    
+                    Helper.Print("Running SwitchCharacter", true);
                     Routine.SwitchCharacter();
                     Routine.Wait(10, 15);
                 }
 
             }
-            catch(ThreadAbortException)
+            catch (ThreadAbortException)
             {
-                    Helper.Print("Routines stopped", true);
+                Helper.Print("Routines stopped", true);
             }
         }
 
@@ -108,7 +108,7 @@ namespace RoKBot
                 {
                     Process[] processes = Process.GetProcessesByName("MEmu");
 
-                    if ((DateTime.UtcNow - Device.LastInteractiveUtc).TotalMinutes > 5 || (DateTime.UtcNow - RoutineStart).TotalMinutes > 10 || processes.Length == 0 || !Device.Ready)
+                    if ((DateTime.UtcNow - Device.ScreenStamp).TotalSeconds > 5 || (DateTime.UtcNow - RoutineStart).TotalMinutes > 10 || processes.Length == 0)
                     {
                         StopRoutines();
 
@@ -133,15 +133,17 @@ namespace RoKBot
 
                         Helper.Print("Restarting MEmu");
 
-                        Process.Start(Path.Combine(Helper.MEmuPath, "MEmu.exe"));                        
+                        Process.Start(Path.Combine(Helper.MEmuPath, "MEmu.exe"));
 
-                        Helper.Print("Restarting adb connection");                        
+                        Helper.Print("Restarting adb connection");
 
                         DateTime start = DateTime.UtcNow;
 
-                        while ((DateTime.UtcNow - start).TotalMinutes < 5)
+                        while (true)
                         {
                             Device.Initialise();
+
+                            using (Bitmap screen = Device.Screen) if (screen != null) break;
 
                             if (Device.Tap("icon.rok"))
                             {
@@ -154,13 +156,13 @@ namespace RoKBot
                             }
 
                             Routine.Wait(1, 2);
-                        }                                                       
+                        }
                     }
 
                     Thread.CurrentThread.Join(1000);
                 }
             }
-            catch(ThreadAbortException)
+            catch (ThreadAbortException)
             {
                 Helper.Print("Hang protection disabled", true);
             }
@@ -169,9 +171,9 @@ namespace RoKBot
         static void SlideVerificationTask()
         {
             try
-            {                
+            {
                 while (true)
-                {                    
+                {
                     if (Device.Match("button.verify", out Rectangle verify))
                     {
                         StopRoutines();
@@ -179,7 +181,7 @@ namespace RoKBot
                         Helper.Print("Verification solver activated", true);
 
                         while (Device.Match("button.verify", out verify))
-                        {                                                        
+                        {
                             Helper.Print("Accquiring puzzle");
 
                             Device.Tap(verify);
@@ -190,7 +192,7 @@ namespace RoKBot
                                 Helper.Print("Puzzle not found, retry after 1-2 seconds");
 
                                 Device.Tap(10, 10);
-                                Routine.Wait(1, 2);                                
+                                Routine.Wait(1, 2);
 
                                 continue;
                             }
@@ -201,7 +203,7 @@ namespace RoKBot
                             int width = right - left;
 
                             using (Bitmap puzzle = Helper.Crop(Device.Screen, new Rectangle { X = left, Y = top, Width = width, Height = height }))
-                            {                                
+                            {
                                 if (Helper.Solve(puzzle, out int offsetX))
                                 {
                                     Device.Swipe(slider, offsetX, Helper.RandomGenerator.Next(-5, 6), Helper.RandomGenerator.Next(1000, 1500));
@@ -234,12 +236,12 @@ namespace RoKBot
                     Thread.CurrentThread.Join(1000);
                 }
             }
-            catch(ThreadAbortException)
+            catch (ThreadAbortException)
             {
             }
-        }        
+        }
 
-        static void VerificationPreventionTask()
+        static void VerificationModeTask()
         {
             try
             {
@@ -251,8 +253,8 @@ namespace RoKBot
                         StopRoutines();
                         Routine.Wait(1, 2);
 
-                        Helper.Print("Verification prevention activated", true);
-                        
+                        Helper.Print("Verification mode activated", true);
+
                         HttpClient client = new HttpClient(new HttpClientHandler { UseProxy = false, Proxy = null });
 
                         JavaScriptSerializer jss = new JavaScriptSerializer();
@@ -261,8 +263,8 @@ namespace RoKBot
                         {
                             receivers = new string[] { "hoai4285@gmail.com" },
                             name = "RoK Request",
-                            content = "<p>Verification requirement detected at " + DateTime.Now+"</p><a href=\"http://api.ahacafe.vn/rok.html\">Solve it now</a>",
-                            subject = "Verification required",
+                            content = "<p>Verification mode activated at " + DateTime.Now + "</p><a href=\"http://api.ahacafe.vn/rok.html\">Solve it now</a>",
+                            subject = "Verification mode activated",
                             mail_address_name = "info"
 
                         }), Encoding.UTF8, "application/json");
@@ -275,8 +277,8 @@ namespace RoKBot
 
                         Helper.Print("Waiting for user intervention", true);
 
-                        while (Process.GetProcessesByName("MEmu").Length > 0 && !Routine.IsReady) Routine.Wait(1, 2);
-                                                                        
+                        while (Process.GetProcessesByName("MEmu").Length > 0 && !Routine.Ready) Routine.Wait(1, 2);
+
                         HangProtectionThread = new Thread(new ThreadStart(HangProtectionTask));
                         HangProtectionThread.Start();
                     }
@@ -342,7 +344,6 @@ namespace RoKBot
 
                             using (MemoryStream ms = new MemoryStream())
                             {
-
                                 screen.Save(ms, encoder, parameters);
                                 client.Pusblish("screen", Convert.ToBase64String(ms.ToArray()));
                             }
@@ -369,7 +370,7 @@ namespace RoKBot
                                 {
                                     case "tap": Device.Tap(x, y); break;
                                     case "press": Device.Press(x, y); break;
-                                    case "move": Device.Move(x, y); break;
+                                    case "move": Device.MoveTo(x, y); break;
                                     case "release": Device.Release(); break;
                                 }
                             }
@@ -382,7 +383,7 @@ namespace RoKBot
                             {
                                 foreach (Process process in Process.GetProcessesByName("MEmu")) process.Kill();
                             }
-                            catch(Exception e)
+                            catch (Exception e)
                             {
 
                             }
@@ -402,10 +403,10 @@ namespace RoKBot
             System.Net.ServicePointManager.UseNagleAlgorithm = false;
 
             Helper.Print("Starting threads", true);
-                        
-            Thread V = new Thread(new ThreadStart(VerificationPreventionTask));                                    
+
+            Thread V = new Thread(new ThreadStart(VerificationModeTask));
             HangProtectionThread = new Thread(new ThreadStart(HangProtectionTask));
-            
+
             Device.Initialise();
 
             StartRountines();

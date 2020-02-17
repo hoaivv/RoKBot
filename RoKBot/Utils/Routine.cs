@@ -15,11 +15,11 @@ namespace RoKBot.Utils
    
     partial class Routine
     {
-        public static bool IsReady => Device.Match(0x1e, 0x1bf, "button.city", out Rectangle match1) || Device.Match(0x1e, 0x1bf, "button.map", out Rectangle match2);
+        public static bool Ready => Device.Match(0x1e, 0x1bf, "button.city", out Rectangle match1) || Device.Match(0x1e, 0x1bf, "button.map", out Rectangle match2);
 
         public static void OpenCity()
         {
-            while (!IsReady) Wait(1, 2);
+            while (!Ready) Wait(1, 2);
 
             if (Device.Match(0x1d, 0x185, "button.search", out Rectangle match, 0.95f))
             {
@@ -30,7 +30,7 @@ namespace RoKBot.Utils
 
         public static void OpenMap()
         {
-            while (!IsReady) Wait(1, 2);
+            while (!Ready) Wait(1, 2);
 
             if (!Device.Match(0x1d, 0x185, "button.search", out Rectangle match, 0.95f))
             {
@@ -1516,7 +1516,7 @@ namespace RoKBot.Utils
         {
             if (Current == null)
             {
-                while (!IsReady) Wait(1, 2);
+                while (!Ready) Wait(1, 2);
 
                 Helper.Print("Detecting characters");
 
@@ -1619,7 +1619,7 @@ namespace RoKBot.Utils
                         Helper.Print("Switched to character #" + test.Index);
                         Wait(20, 25);
 
-                        while (!IsReady) Wait(2, 3);                        
+                        while (!Ready) Wait(2, 3);                        
 
                         return true;
                     }                    
