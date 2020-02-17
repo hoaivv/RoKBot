@@ -1,20 +1,17 @@
-﻿using AForge.Imaging;
-using AForge.Imaging.Filters;
-using RoKBot.Utils;
+﻿using RoKBot.Utils;
+using Shark.Messenger;
+using Shark.Runtime;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Web.Script.Serialization;
-using Shark.Runtime;
-using System.Drawing.Imaging;
-using SharpAdbClient;
-using Shark.Messenger;
 
 namespace RoKBot
 {
@@ -168,79 +165,6 @@ namespace RoKBot
             }
         }
 
-        static void SlideVerificationTask()
-        {
-            try
-            {
-                while (true)
-                {
-                    if (Device.Match("button.verify", out Rectangle verify))
-                    {
-                        StopRoutines();
-
-                        Helper.Print("Verification solver activated", true);
-
-                        while (Device.Match("button.verify", out verify))
-                        {
-                            Helper.Print("Accquiring puzzle");
-
-                            Device.Tap(verify);
-                            Routine.Wait(5, 6);
-
-                            if (!Device.Match("button.slider", out Rectangle slider))
-                            {
-                                Helper.Print("Puzzle not found, retry after 1-2 seconds");
-
-                                Device.Tap(10, 10);
-                                Routine.Wait(1, 2);
-
-                                continue;
-                            }
-
-                            int top = 0x75, left = 0xc9, right = 0x1b5, bottom = 0x105;
-
-                            int height = bottom - top;
-                            int width = right - left;
-
-                            using (Bitmap puzzle = Helper.Crop(Device.Screen, new Rectangle { X = left, Y = top, Width = width, Height = height }))
-                            {
-                                if (Helper.Solve(puzzle, out int offsetX))
-                                {
-                                    Device.Swipe(slider, offsetX, Helper.RandomGenerator.Next(-5, 6), Helper.RandomGenerator.Next(1000, 1500));
-
-                                    Routine.Wait(3, 5);
-
-                                    if (Device.Match("button.slider", out slider))
-                                    {
-                                        Helper.Print("False positive, retry after 1-2 seconds");
-
-                                        Device.Tap(10, 10);
-                                        Routine.Wait(1, 2);
-                                    }
-                                    else
-                                    {
-                                        Helper.Print("Puzzle solved");
-                                        StartRountines();
-                                    }
-                                }
-                                else
-                                {
-                                    Helper.Print("Solution not found, retry after 1-2 seconds");
-                                    Device.Tap(10, 10);
-                                    Routine.Wait(1, 2);
-                                }
-                            }
-                        }
-                    }
-
-                    Thread.CurrentThread.Join(1000);
-                }
-            }
-            catch (ThreadAbortException)
-            {
-            }
-        }
-
         static void VerificationModeTask()
         {
             try
@@ -318,6 +242,14 @@ namespace RoKBot
             }
         }
 
+        static void MessengerRegister(MessengerClient client)
+        {
+            client.Register("HVV RoK Bot").ContinueWith(result =>
+            {
+                if (!result.Result) MessengerRegister(client);
+            });
+        }
+
         static void MessengerListener()
         {
             ImageCodecInfo encoder = ImageCodecInfo.GetImageEncoders().First(i => i.FormatID == ImageFormat.Jpeg.Guid);
@@ -326,7 +258,7 @@ namespace RoKBot
 
             using (MessengerClient client = new MessengerClient("api.ahacafe.vn", 100))
             {
-                client.Register("HVV RoK Bot");
+                MessengerRegister(client);
 
                 DateTime lastScreenRequest = DateTime.UtcNow;
 
@@ -354,7 +286,9 @@ namespace RoKBot
 
                 }, null, true);
 
-                client.OnData += pkg =>
+                client.ChannelTerminated += () => MessengerRegister(client);
+                
+                client.PackageReceived += pkg =>
                 {
                     switch (pkg.Type)
                     {
@@ -418,5 +352,82 @@ namespace RoKBot
 
             while (true) Thread.CurrentThread.Join(1000);
         }
+
+        #region deprecated
+
+        static void SlideVerificationTask()
+        {
+            try
+            {
+                while (true)
+                {
+                    if (Device.Match("button.verify", out Rectangle verify))
+                    {
+                        StopRoutines();
+
+                        Helper.Print("Verification solver activated", true);
+
+                        while (Device.Match("button.verify", out verify))
+                        {
+                            Helper.Print("Accquiring puzzle");
+
+                            Device.Tap(verify);
+                            Routine.Wait(5, 6);
+
+                            if (!Device.Match("button.slider", out Rectangle slider))
+                            {
+                                Helper.Print("Puzzle not found, retry after 1-2 seconds");
+
+                                Device.Tap(10, 10);
+                                Routine.Wait(1, 2);
+
+                                continue;
+                            }
+
+                            int top = 0x75, left = 0xc9, right = 0x1b5, bottom = 0x105;
+
+                            int height = bottom - top;
+                            int width = right - left;
+
+                            using (Bitmap puzzle = Helper.Crop(Device.Screen, new Rectangle { X = left, Y = top, Width = width, Height = height }))
+                            {
+                                if (Helper.Solve(puzzle, out int offsetX))
+                                {
+                                    Device.Swipe(slider, offsetX, Helper.RandomGenerator.Next(-5, 6), Helper.RandomGenerator.Next(1000, 1500));
+
+                                    Routine.Wait(3, 5);
+
+                                    if (Device.Match("button.slider", out slider))
+                                    {
+                                        Helper.Print("False positive, retry after 1-2 seconds");
+
+                                        Device.Tap(10, 10);
+                                        Routine.Wait(1, 2);
+                                    }
+                                    else
+                                    {
+                                        Helper.Print("Puzzle solved");
+                                        StartRountines();
+                                    }
+                                }
+                                else
+                                {
+                                    Helper.Print("Solution not found, retry after 1-2 seconds");
+                                    Device.Tap(10, 10);
+                                    Routine.Wait(1, 2);
+                                }
+                            }
+                        }
+                    }
+
+                    Thread.CurrentThread.Join(1000);
+                }
+            }
+            catch (ThreadAbortException)
+            {
+            }
+        }
+
+        #endregion
     }
 }

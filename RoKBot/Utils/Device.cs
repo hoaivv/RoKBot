@@ -1,4 +1,5 @@
 ﻿using SharpAdbClient;
+using SharpAdbClient.Exceptions;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -28,13 +29,23 @@ namespace RoKBot.Utils
         {
             get
             {
-                Bitmap current = _Screen;
-
-                if (current == null || (DateTime.UtcNow - ScreenStamp).TotalMilliseconds > 100) return null;
-
-                lock (current)
+                while (true)
                 {
-                    return current.Clone(new Rectangle(0, 0, current.Width, current.Height), PixelFormat.Format24bppRgb);
+                    Bitmap current = _Screen;
+
+                    if (current == null || (DateTime.UtcNow - ScreenStamp).TotalMilliseconds > 1000) return null;
+
+                    lock (current)
+                    {
+                        try
+                        {
+                            return current.Clone(new Rectangle(0, 0, current.Width, current.Height), PixelFormat.Format24bppRgb);
+                        }
+                        catch(ArgumentException)
+                        {
+                            continue;
+                        }
+                    }
                 }
             }
         }
@@ -55,7 +66,7 @@ namespace RoKBot.Utils
                     {
                         DeviceData current = _Device;
 
-                        if (Shell(current, "screencap /sdcard/screen.png") != null)
+                        if (Shell(current, "screencap /sdcard/screen.png").Result != null)
                         {
                             using (SyncService service = new SyncService(current))
                             {
@@ -80,9 +91,12 @@ namespace RoKBot.Utils
                             _Screen = null;
                         }
                     }
-                    catch (Exception)
+                    catch (AdbException)
                     {
                         _Screen = null;
+                    }
+                    catch(Exception)
+                    {
                     }
                     finally
                     {
@@ -131,7 +145,7 @@ namespace RoKBot.Utils
             if (device == null) return null;
 
             ConsoleOutputReceiver receiver = new ConsoleOutputReceiver();
-            await AdbClient.Instance.ExecuteRemoteCommandAsync(string.Join(";", cmds), device, receiver, new CancellationToken(), 1000);
+            await AdbClient.Instance.ExecuteRemoteCommandAsync(string.Join(";", cmds), device, receiver, CancellationToken.None, 1000);
 
             return receiver.ToString();
         }

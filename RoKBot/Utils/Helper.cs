@@ -3,6 +3,7 @@ using AForge.Imaging.Filters;
 using System;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 
@@ -10,7 +11,10 @@ namespace RoKBot.Utils
 {
     static class Helper
     {
-        public const string MEmuPath = @"D:\Program Files\Microvirt\MEmu";        
+        const string MEmuPath1 = @"D:\Program Files\Microvirt\MEmu";
+        const string MEmuPath2 = @"D:\Microvirt\MEmu\MEmu";
+
+        public static string MEmuPath => Directory.Exists(MEmuPath1) ? MEmuPath1 : MEmuPath2;
 
         public static Random RandomGenerator = new Random((int)DateTime.UtcNow.Ticks);
 
